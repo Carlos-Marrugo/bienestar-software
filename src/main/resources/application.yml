@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bienestar_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# JWT Configuration
+jwt:
+  secret: tu_clave_secreta_muy_larga_y_segura_para_firmar_los_tokens_jwt
+  expiration: 86400000 # 24 horas en milisegundos
+
+# Logging
+logging:
+  level:
+    org.springframework.web: INFO
+    org.hibernate: INFO
+    com.unicolombo.bienestar: DEBUG
