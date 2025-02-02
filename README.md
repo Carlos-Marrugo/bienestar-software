@@ -1,2 +1,2 @@
 **Authentication Arquitectura Flujo**
-![image](https://github.com/user-attachments/assets/d53d125a-e53d-4556-8479-8d6447759ba4)
+![diagram-export-1-2-2025-18_02_51](https://github.com/user-attachments/assets/b2523d3a-23d0-4b98-a3fd-2d5c446fba08)
