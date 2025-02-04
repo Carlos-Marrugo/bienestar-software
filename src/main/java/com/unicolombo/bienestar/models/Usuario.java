@@ -38,4 +38,6 @@ public class Usuario {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+
 }
