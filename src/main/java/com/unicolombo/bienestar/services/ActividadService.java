@@ -21,6 +21,15 @@ public class ActividadService {
     }
 
     public Actividad createActividad(Actividad actividad) {
+        List<Actividad> actividadesInstructor = actividadRepository.findByInstructorAndFechaInicioBetween(
+                actividad.getInstructor(),
+                actividad.getFechaInicio(),
+                actividad.getFechaFin()
+        );
+
+        if(!actividadesInstructor.isEmpty()) {
+            throw new RuntimeException("El instructor ya está asignado a otra actividad en este horario.");
+        }
         return actividadRepository.save(actividad);
     }
 
