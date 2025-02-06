@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.services;
 
+import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Inscripcion;
 import com.unicolombo.bienestar.repositories.InscripcionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,12 @@ public class InscripcionService {
     }
 
     public Inscripcion createInscripcion(Inscripcion inscripcion) {
+
+        Estudiante estudiante = inscripcion.getEstudiante();
+        if(estudiante.getHorasAcumuladas() >= 32) {
+            throw new RuntimeException("El estudiante ya ha alcanzado el límite de horas.");
+        }
+
         return inscripcionRepository.save(inscripcion);
     }
 
