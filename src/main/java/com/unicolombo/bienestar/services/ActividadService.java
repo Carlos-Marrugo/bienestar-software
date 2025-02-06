@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.services;
 
+import com.unicolombo.bienestar.exceptions.ActividadNoDisponibleException;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +17,9 @@ public class ActividadService {
         return actividadRepository.findAll();
     }
 
-    public Optional<Actividad> getActividadById(Long id) {
-        return actividadRepository.findById(id);
+    public Actividad getActividadById(Long id) {
+        return actividadRepository.findById(id)
+                .orElseThrow(() -> new ActividadNoDisponibleException("Actividad no encontrada"));
     }
 
     public Actividad createActividad(Actividad actividad) {
