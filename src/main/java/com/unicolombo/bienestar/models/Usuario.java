@@ -79,7 +79,7 @@ public class Usuario {
         this.apellido = apellido;
     }
 
-    public Role getRol() {
+    public String getRol() {
         return rol;
     }
 
