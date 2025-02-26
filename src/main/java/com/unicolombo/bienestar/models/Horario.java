@@ -25,4 +25,44 @@ public class Horario {
 
     @Column(nullable = false)
     private LocalTime horaFin;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Actividad getActividad() {
+        return actividad;
+    }
+
+    public void setActividad(Actividad actividad) {
+        this.actividad = actividad;
+    }
+
+    public DiaSemana getDiaSemana() {
+        return diaSemana;
+    }
+
+    public void setDiaSemana(DiaSemana diaSemana) {
+        this.diaSemana = diaSemana;
+    }
+
+    public LocalTime getHoraInicio() {
+        return horaInicio;
+    }
+
+    public void setHoraInicio(LocalTime horaInicio) {
+        this.horaInicio = horaInicio;
+    }
+
+    public LocalTime getHoraFin() {
+        return horaFin;
+    }
+
+    public void setHoraFin(LocalTime horaFin) {
+        this.horaFin = horaFin;
+    }
 }
