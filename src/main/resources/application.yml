@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/bienestar_software
+    url: jdbc:postgresql://localhost:5432/actividades_bd
     username: postgressql
-    password: 123
+    password: root
     driver-class-name: org.postgresql.Driver
 
   jpa:
