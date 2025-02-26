@@ -21,6 +21,12 @@ public class AuthService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
+
+        //Validar correo
+        if (!correo.endsWith("@unicolombo.edu.co")) {
+            throw new UsernameNotFoundException("Este usuario no hace parte de Unicolombo");
+        }
+
         Usuario usuario = usuarioRepository.findByEmail(correo)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
@@ -31,6 +37,11 @@ public class AuthService implements UserDetailsService {
     }
 
     public String autenticarUsuario(String correo, String password) {
+
+        if (!correo.endsWith("@unicolombo.edu.co")) {
+            throw new RuntimeException("El correo no pertenece al dominio @unicolombo.edu.co");
+        }
+
         UserDetails userDetails = loadUserByUsername(correo);
 
         if (passwordEncoder.matches(password, userDetails.getPassword())) {
