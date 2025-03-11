@@ -36,7 +36,7 @@ public class AuthService implements UserDetailsService {
                 .build();
     }
 
-    public String autenticarUsuario(String correo, String password) {
+        public String authenticarUsuario(String correo, String password) {
 
         if (!correo.endsWith("@unicolombo.edu.co")) {
             throw new RuntimeException("El correo no pertenece al dominio @unicolombo.edu.co");
