@@ -15,10 +15,11 @@ public class UsuarioServices {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public boolean authenticateUser(String email, String password){
+    public boolean authenticateUser(String email, String codigoEstudiantil){
+
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        return passwordEncoder.matches(password, usuario.getPassword());
+        return usuario.getCodigoEstudiantil().equals(codigoEstudiantil);
     }
 
 }

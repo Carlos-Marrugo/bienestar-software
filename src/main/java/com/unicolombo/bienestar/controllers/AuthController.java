@@ -15,7 +15,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
-        boolean autenticado = usuarioService.authenticateUser(loginRequest.getEmail(), loginRequest.getPassword());
+        boolean autenticado = usuarioService.authenticateUser(loginRequest.getEmail(), loginRequest.getCodigoEstudiantil());
         if (autenticado) {
             return ResponseEntity.ok("Autenticación exitosa");
         } else {
