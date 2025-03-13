@@ -2,7 +2,12 @@ package com.unicolombo.bienestar.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
 
 @Data
 @Entity
@@ -39,6 +44,12 @@ public class Usuario {
 
     @Column(name = "codigo_estudiantil", unique = true, nullable = false)
     private String codigoEstudiantil;
+
+    //Implementacion userdetails
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + rol));
+    }
 
     public Long getId() {
         return id;
@@ -119,4 +130,7 @@ public class Usuario {
     public void setCodigoEstudiantil(String codigoEstudiantil) {
         this.codigoEstudiantil = codigoEstudiantil;
     }
+
+
+
 }
