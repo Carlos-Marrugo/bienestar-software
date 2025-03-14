@@ -27,6 +27,13 @@ public class Usuario implements UserDetails {
     @Column(name = "rol", nullable = false)
     private String rol; // "ESTUDIANTE", "COORDINADOR", "INSTRUCTOR"
 
+    
+    private String codigoEstudiantil;
+
+    
+    public String getCodigoEstudiantil(){
+        return codigoEstudiantil;
+    }
 
 
     @Override
@@ -37,6 +44,20 @@ public class Usuario implements UserDetails {
     @Override
     public String getUsername() {
         return email;
+    }
+
+    @Override
+    public String getPassword() { return password; }
+
+
+    public String getEmail() { return email; }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
     }
 
     @Override

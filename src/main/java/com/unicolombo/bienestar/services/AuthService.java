@@ -7,8 +7,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCrypt;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,7 +16,7 @@ public class AuthService implements UserDetailsService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
@@ -45,10 +44,14 @@ public class AuthService implements UserDetailsService {
         UserDetails userDetails = loadUserByUsername(correo);
 
         if (passwordEncoder.matches(password, userDetails.getPassword())) {
-            // Aquí se generará el token JWT (lo implementaremos después)
             return "TokenGenerado";
         } else {
             throw new RuntimeException("Credenciales inválidas");
         }
     }
+
+    public String encodePassword(String rawPassword) {
+        return passwordEncoder.encode(rawPassword);
+    }
+
 }

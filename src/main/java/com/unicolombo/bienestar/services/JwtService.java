@@ -2,7 +2,6 @@ package com.unicolombo.bienestar.services;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -12,6 +11,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import javax.crypto.SecretKey;
 
 @Service
 public class JwtService {
@@ -33,11 +34,11 @@ public class JwtService {
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         return Jwts.builder()
-                .setClaims(extraClaims)
-                .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24 horas
-                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .claims(extraClaims)  
+                .subject(userDetails.getUsername())  
+                .issuedAt(new Date(System.currentTimeMillis()))  
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) 
+                .signWith(getSignInKey())  
                 .compact();
     }
 
@@ -56,10 +57,10 @@ public class JwtService {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(getSignInKey())
+                .verifyWith((SecretKey) getSignInKey()) 
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token) 
+                .getPayload();  
     }
 
     private Key getSignInKey() {
