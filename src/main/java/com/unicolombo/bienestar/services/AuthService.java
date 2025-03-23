@@ -18,6 +18,8 @@ public class AuthService implements UserDetailsService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+
+
     @Override
     public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
 
@@ -36,6 +38,7 @@ public class AuthService implements UserDetailsService {
     }
 
         public String authenticarUsuario(String correo, String password) {
+
 
         if (!correo.endsWith("@unicolombo.edu.co")) {
             throw new RuntimeException("El correo no pertenece al dominio @unicolombo.edu.co");
