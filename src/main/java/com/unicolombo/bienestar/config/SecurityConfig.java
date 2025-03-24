@@ -30,7 +30,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()  // Endpoints publicos
                         .requestMatchers("/api/actividades/**").hasRole("ADMIN")  // Solo ADMIN
-                        .requestMatchers("/api/estudiante/**").hasRole("ESTUDIANTE")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
