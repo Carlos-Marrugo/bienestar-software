@@ -28,7 +28,7 @@ public class ActividadCreateDto {
 
     private LocalTime horaFin;
 
-    @NotNull(message = "El máximo de estudiantes es obligatorio")
+    @NotNull(message = "El maximo de estudiantes es obligatorio")
     @Min(value = 1, message = "Debe tener al menos 1 estudiante")
     private Integer maxEstudiantes;
 
