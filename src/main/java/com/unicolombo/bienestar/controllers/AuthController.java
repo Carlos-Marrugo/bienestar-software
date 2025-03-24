@@ -1,43 +1,40 @@
 package com.unicolombo.bienestar.controllers;
 
-
+import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.services.AuthService;
 import com.unicolombo.bienestar.services.JwtService;
-import com.unicolombo.bienestar.services.UsuarioDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private UsuarioDetailsService usuarioDetailsService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private AuthService authService;
 
     @Autowired
     private JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            Usuario usuario = authService.authenticateUser(request.getEmail(), request.getCodigoEstudiantil());
+            String token = jwtService.generateToken(usuario);
 
-        UserDetails userDetails = usuarioDetailsService.loadUserByUsername(loginRequest.getEmail());
-
-        if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-            throw new RuntimeException("Credenciales inválidas");
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "message", "Autenticación exitosa",
+                    "usuario", Map.of(
+                            "email", usuario.getEmail(),
+                            "rol", usuario.getRol(),
+                            "codigoEstudiantil", usuario.getCodigoEstudiantil()
+                    )
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-
-        String token = jwtService.generateToken(userDetails);
-
-        return ResponseEntity.ok(new LoginResponse(token));
     }
 }
