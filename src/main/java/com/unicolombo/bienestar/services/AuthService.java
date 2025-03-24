@@ -11,7 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AuthService implements UserDetailsService {
+public class AuthService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
@@ -19,42 +19,21 @@ public class AuthService implements UserDetailsService {
     private PasswordEncoder passwordEncoder;
 
 
+    public Usuario authenticateUser(String email, String codigoEstudiantil) {
 
-    @Override
-    public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
-
-        //Validar correo
-        if (!correo.endsWith("@unicolombo.edu.co")) {
-            throw new UsernameNotFoundException("Este usuario no hace parte de Unicolombo");
-        }
-
-        Usuario usuario = usuarioRepository.findByEmail(correo)
+        Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
-        return User.withUsername(usuario.getEmail())
-                .password(usuario.getPassword())
-                .roles(usuario.getRol())
-                .build();
-    }
 
-        public String authenticarUsuario(String correo, String password) {
-
-
-        if (!correo.endsWith("@unicolombo.edu.co")) {
-            throw new RuntimeException("El correo no pertenece al dominio @unicolombo.edu.co");
+        if (!usuario.getCodigoEstudiantil().equals(codigoEstudiantil)) {
+            throw new RuntimeException("Código estudiantil incorrecto");
         }
 
-        UserDetails userDetails = loadUserByUsername(correo);
 
-        if (passwordEncoder.matches(password, userDetails.getPassword())) {
-            return "TokenGenerado";
-        } else {
-            throw new RuntimeException("Credenciales inválidas");
+        if (!usuario.getRol().equals("ESTUDIANTE")) {
+            throw new RuntimeException("Solo los estudiantes pueden iniciar sesión con código estudiantil");
         }
-    }
 
-    public String encodePassword(String rawPassword) {
-        return passwordEncoder.encode(rawPassword);
+        return usuario;
     }
-
 }

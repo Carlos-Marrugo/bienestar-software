@@ -1,15 +1,12 @@
 package com.unicolombo.bienestar.models;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import java.util.Collection;
 import java.util.Collections;
 
-@Data
 @Entity
 @Table(name = "usuarios")
 public class Usuario implements UserDetails {
@@ -18,46 +15,32 @@ public class Usuario implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "email", unique = true, nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password", nullable = false)
+    @Column(nullable = false)
     private String password;
 
-    @Column(name = "rol", nullable = false)
-    private String rol; // "ESTUDIANTE", "COORDINADOR", "INSTRUCTOR"
+    @Column(nullable = false)
+    private String rol; // "ESTUDIANTE" o "ADMIN"
 
-    
+    @Column(name = "codigo_estudiantil", nullable = false)
     private String codigoEstudiantil;
 
-    
-    public String getCodigoEstudiantil(){
-        return codigoEstudiantil;
-    }
-
-
+    // --- UserDetails ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + rol));
     }
 
     @Override
-    public String getUsername() {
-        return email;
+    public String getPassword() {
+        return this.password;
     }
 
     @Override
-    public String getPassword() { return password; }
-
-
-    public String getEmail() { return email; }
-
-    public String getRol() {
-        return rol;
-    }
-
-    public void setRol(String rol) {
-        this.rol = rol;
+    public String getUsername() {
+        return this.email;
     }
 
     @Override
@@ -78,5 +61,38 @@ public class Usuario implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    // --- Getters y Setters ---
+    public Long getId() {
+        return id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
+    }
+
+    public String getCodigoEstudiantil() {
+        return codigoEstudiantil;
+    }
+
+    public void setCodigoEstudiantil(String codigoEstudiantil) {
+        this.codigoEstudiantil = codigoEstudiantil;
     }
 }
