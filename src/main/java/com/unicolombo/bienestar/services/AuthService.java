@@ -1,6 +1,6 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.controllers.LoginRequest;
+import com.unicolombo.bienestar.dto.LoginRequest;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
