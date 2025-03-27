@@ -27,8 +27,9 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String rol; // "ESTUDIANTE" o "ADMIN"
+    private Role rol; // "ESTUDIANTE" o "ADMIN"
 
     @Column(name = "codigo_estudiantil", nullable = false)
     private String codigoEstudiantil;
@@ -102,11 +103,11 @@ public class Usuario implements UserDetails {
         this.password = password;
     }
 
-    public String getRol() {
+    public Role getRol() {
         return rol;
     }
 
-    public void setRol(String rol) {
+    public void setRol(Role rol) {
         this.rol = rol;
     }
 

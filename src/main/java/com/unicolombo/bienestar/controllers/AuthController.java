@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.LoginRequest;
+import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.services.AuthService;
 import com.unicolombo.bienestar.services.JwtService;
@@ -27,6 +28,12 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             Usuario usuario = authService.authenticate(request);
+
+            //estudiantes con endpoints especial
+            if (usuario.getRol() == Role.ESTUDIANTE){
+                throw new RuntimeException("Estudiantes deben usar endpoint especial (email y codigo)");
+            }
+
             String token = jwtService.generateToken(usuario);
 
             return ResponseEntity.ok(Map.of(
