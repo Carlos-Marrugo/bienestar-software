@@ -31,8 +31,6 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private Role rol; // "ESTUDIANTE" o "ADMIN"
 
-    @Column(name = "codigo_estudiantil", nullable = false)
-    private String codigoEstudiantil;
 
     // --- UserDetails ---
     @Override
@@ -111,11 +109,6 @@ public class Usuario implements UserDetails {
         this.rol = rol;
     }
 
-    public String getCodigoEstudiantil() {
-        return codigoEstudiantil;
-    }
 
-    public void setCodigoEstudiantil(String codigoEstudiantil) {
-        this.codigoEstudiantil = codigoEstudiantil;
-    }
+
 }

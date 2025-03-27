@@ -53,5 +53,5 @@ public class ActividadService {
         return actividadRepository.save(actividad);
     }
 
-    // Otros métodos del servicio...
+
 }
