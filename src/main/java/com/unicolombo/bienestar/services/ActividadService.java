@@ -2,13 +2,15 @@ package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.models.Actividad;
+import com.unicolombo.bienestar.models.Role;
+import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import com.unicolombo.bienestar.models.*;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ActividadService {
@@ -20,24 +22,24 @@ public class ActividadService {
     private UsuarioRepository usuarioRepository;
 
     @Transactional
-    public Actividad crearActividad(ActividadCreateDto dto, String adminEmail) {
+    public Actividad crearActividad(ActividadCreateDto dto) {
+        String emailAdmin = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        //admin
-        Usuario admin = usuarioRepository.findByEmail(adminEmail)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        Usuario admin = usuarioRepository.findByEmail(emailAdmin)
+                .orElseThrow(() -> new RuntimeException("Usuario administrador no encontrado"));
 
-        if(!"ADMIN".equals(admin.getRol())){
+        if (!Role.ADMIN.equals(admin.getRol())) {
             throw new AccessDeniedException("Solo los administradores pueden crear actividades");
         }
 
-        //instructor
         Usuario instructor = usuarioRepository.findById(dto.getInstructorId())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Instructor no encontrado"));
 
-        if (!"INSTRUCTOR".equals(instructor.getRol())) {
-            throw new RuntimeException("El usuario asignado no es un instructor");
+        if (!Role.INSTRUCTOR.equals(instructor.getRol())) {
+            throw new IllegalArgumentException("El usuario asignado no es un instructor");
         }
 
+        // Crear la actividad
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
         actividad.setUbicacion(dto.getUbicacion());
@@ -51,4 +53,5 @@ public class ActividadService {
         return actividadRepository.save(actividad);
     }
 
+    // Otros métodos del servicio...
 }

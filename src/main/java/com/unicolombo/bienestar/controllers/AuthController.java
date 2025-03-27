@@ -7,6 +7,7 @@ import com.unicolombo.bienestar.services.AuthService;
 import com.unicolombo.bienestar.services.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ public class AuthController {
     private JwtService jwtService;
 
     @PostMapping("/login")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             Usuario usuario = authService.authenticate(request);

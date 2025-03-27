@@ -3,36 +3,36 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.services.ActividadService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/actividades")
+@RequiredArgsConstructor
 public class ActividadController {
 
-    @Autowired
-    private ActividadService actividadService;
+
+    private final ActividadService actividadService;
 
     @PostMapping
-    public ResponseEntity<?> crearActividad(
-            @RequestBody ActividadCreateDto dto,
-            @AuthenticationPrincipal UserDetails userDetails) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Actividad> crearActividad(@RequestBody ActividadCreateDto dto){
+        Actividad actividad = actividadService.crearActividad(dto);
+        return ResponseEntity.ok(actividad);
 
-        try {
-            Actividad actividad = actividadService.crearActividad(dto, userDetails.getUsername());
-            return ResponseEntity.ok(actividad);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    }
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
+    public ResponseEntity<List<Actividad>> listarActividades() {
+        return ResponseEntity.ok(actividadService.listarTodas());
     }
 
 }
