@@ -33,7 +33,7 @@ public class AuthController {
         UserDetails userDetails = usuarioDetailsService.loadUserByUsername(loginRequest.getEmail());
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-            throw new RuntimeException("Credenciales inválidas");
+            throw new RuntimeException("Credenciales invalidas");
         }
 
         String token = jwtService.generateToken(userDetails);
