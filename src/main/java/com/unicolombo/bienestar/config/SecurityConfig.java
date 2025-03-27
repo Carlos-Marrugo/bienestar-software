@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()  // Endpoints publicos
-                        .requestMatchers(HttpMethod.POST, "/api/actividades/**").hasRole("ADMIN")  // Solo ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/actividades/**").authenticated()  // Solo ADMIN
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

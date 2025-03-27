@@ -6,7 +6,6 @@ import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 @Service
 public class AuthService {
 
@@ -16,25 +15,14 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public Usuario authenticate(LoginRequest request) {
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+    public Usuario authenticate(String email, String password) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // auth para estudiantes
-        if (usuario.getRol().equals("ESTUDIANTE")) {
-            if (!usuario.getCodigoEstudiantil().equals(request.getCodigoEstudiantil())) {
-                throw new RuntimeException("Codigo estudiantil incorrecto");
-            }
-            return usuario;
-        }
-        // auth para admin/instructores
-        else if (usuario.getRol().equals("ADMIN") || usuario.getRol().equals("INSTRUCTOR")) {
-            if (!passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
-                throw new RuntimeException("Contraseña incorrecta");
-            }
-            return usuario;
+        if (!passwordEncoder.matches(password, usuario.getPassword())) {
+            throw new RuntimeException("Credenciales inválidas");
         }
 
-        throw new RuntimeException("Tipo de usuario no válido");
+        return usuario;
     }
 }
