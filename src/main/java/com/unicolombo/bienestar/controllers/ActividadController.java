@@ -29,10 +29,13 @@ public class ActividadController {
 
     }
 
+    /*
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<List<Actividad>> listarActividades() {
         return ResponseEntity.ok(actividadService.listarTodas());
     }
+    */
+
 
 }

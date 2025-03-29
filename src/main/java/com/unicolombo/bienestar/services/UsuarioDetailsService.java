@@ -23,7 +23,7 @@ public class UsuarioDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
         return User.withUsername(usuario.getEmail())
                 .password(usuario.getPassword())
-                .roles(usuario.getRol())
+                .roles(usuario.getRol().name())
                 .build();
     }
 }
