@@ -3,16 +3,13 @@ package com.unicolombo.bienestar.controllers;
 public class AuthResponse {
     private String token;
     private String message;
-    private String email;
-    private String codigoEstudiantil;
-    private String rol;
+    private String usuario;
 
-    public AuthResponse(String token, String message, String email, String codigoEstudiantil, String rol) {
+
+    public AuthResponse(String token, String message, String usuario) {
         this.token = token;
         this.message = message;
-        this.email = email;
-        this.codigoEstudiantil = codigoEstudiantil;
-        this.rol = rol;
+        this.usuario = usuario;
     }
 
     public String getToken() {
@@ -31,27 +28,11 @@ public class AuthResponse {
         this.message = message;
     }
 
-    public String getEmail() {
-        return email;
+    public String getUsuario() {
+        return usuario;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getCodigoEstudiantil() {
-        return codigoEstudiantil;
-    }
-
-    public void setCodigoEstudiantil(String codigoEstudiantil) {
-        this.codigoEstudiantil = codigoEstudiantil;
-    }
-
-    public String getRol() {
-        return rol;
-    }
-
-    public void setRol(String rol) {
-        this.rol = rol;
+    public void setUsuario(String usuario) {
+        this.usuario = usuario;
     }
 }
