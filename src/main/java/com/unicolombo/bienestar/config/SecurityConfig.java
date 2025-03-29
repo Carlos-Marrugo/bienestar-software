@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.config;
 import com.unicolombo.bienestar.filters.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,7 +30,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()  // Endpoints publicos
-                        .requestMatchers("/api/actividades/**").hasRole("ADMIN")  // Solo ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/actividades/**").hasRole("ADMIN")  // Solo ADMIN
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

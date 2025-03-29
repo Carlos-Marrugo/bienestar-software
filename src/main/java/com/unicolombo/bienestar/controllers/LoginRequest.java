@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.controllers;
 public class LoginRequest {
     private String email;
     private String password;
+    //private String codigoEstudiantil;
 
 
 
@@ -21,4 +22,15 @@ public class LoginRequest {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    /*
+    public String getCodigoEstudiantil() {
+        return codigoEstudiantil;
+    }
+
+    public void setCodigoEstudiantil(String codigoEstudiantil) {
+        this.codigoEstudiantil = codigoEstudiantil;
+    }
+    */
+
 }

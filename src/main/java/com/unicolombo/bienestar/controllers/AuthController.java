@@ -1,43 +1,57 @@
 package com.unicolombo.bienestar.controllers;
 
-
+import com.unicolombo.bienestar.dto.LoginRequest;
+import com.unicolombo.bienestar.models.Role;
+import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.services.AuthService;
 import com.unicolombo.bienestar.services.JwtService;
-import com.unicolombo.bienestar.services.UsuarioDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private UsuarioDetailsService usuarioDetailsService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private AuthService authService;
 
     @Autowired
     private JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            Usuario usuario = authService.authenticate(request);
 
-        UserDetails userDetails = usuarioDetailsService.loadUserByUsername(loginRequest.getEmail());
+            //estudiantes con endpoints especial
+            if (usuario.getRol() == Role.ESTUDIANTE){
+                throw new RuntimeException("Estudiantes deben usar endpoint especial (email y codigo)");
+            }
 
-        if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-            throw new RuntimeException("Credenciales invalidas");
+            String token = jwtService.generateToken(usuario);
+
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "usuario", Map.of(
+                            "id", usuario.getId(),
+                            "email", usuario.getEmail(),
+                            "rol", usuario.getRol(),
+                            "nombre", usuario.getNombre(),
+                            "apellido", usuario.getApellido()
+                    )
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", e.getMessage()
+            ));
         }
-
-        String token = jwtService.generateToken(userDetails);
-
-        return ResponseEntity.ok(new LoginResponse(token));
     }
 }

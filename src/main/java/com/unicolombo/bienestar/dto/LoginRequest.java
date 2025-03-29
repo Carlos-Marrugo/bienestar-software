@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LoginRequest {
     private String email;
-    private String codigoEstudiantil;
+    private String password;
+    //private String codigoEstudiantil;
 
     public String getEmail() {
         return email;
@@ -17,6 +18,14 @@ public class LoginRequest {
         this.email = email;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+/*
     public String getCodigoEstudiantil() {
         return codigoEstudiantil;
     }
@@ -24,4 +33,6 @@ public class LoginRequest {
     public void setCodigoEstudiantil(String codigoEstudiantil) {
         this.codigoEstudiantil = codigoEstudiantil;
     }
+    */
+
 }
