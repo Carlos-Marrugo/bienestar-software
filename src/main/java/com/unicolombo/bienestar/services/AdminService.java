@@ -9,13 +9,12 @@ import org.springframework.stereotype.Service;
 public class AdminService {
 
     private static final String ADMIN_USERNAME = "admin";
-    private static final String ADMIN_PASSWORD = "admin123";  // Contraseña predeterminada
+    private static final String ADMIN_PASSWORD = "admin123";
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     public boolean authenticateAdmin(String username, String password) {
-        // Verifica si el username y la contraseña coinciden con los predeterminados
         return ADMIN_USERNAME.equals(username) && passwordEncoder.matches(password, passwordEncoder.encode(ADMIN_PASSWORD));
     }
 }
