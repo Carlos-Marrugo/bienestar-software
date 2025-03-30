@@ -28,11 +28,11 @@ public class DataInitializer {
         admin.setNombre("Admin");
         admin.setApellido("Vargas");
         usuarioRepository.save(admin);
-        */
+
 
 
         // Crear INSTRUCTOR
-        /*
+
         Usuario instructor = new Usuario();
         instructor.setEmail("sarah@unicolombo.edu.co");
         instructor.setPassword(passwordEncoder.encode("sarah123"));
@@ -40,7 +40,7 @@ public class DataInitializer {
         instructor.setNombre("Sarah");
         instructor.setApellido("Marenco");
         usuarioRepository.save(instructor);
-        */
+*/
 
     }
 }
