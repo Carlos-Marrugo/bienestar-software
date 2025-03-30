@@ -1,53 +1,49 @@
-package com.unicolombo.bienestar.models;
+package com.unicolombo.bienestar.dto;
 
-import jakarta.persistence.*;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-@Entity
-@Table(name = "actividades")
 @Data
-public class Actividad {
+public class ActividadCreateDto {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
+    @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
 
-    @Column(nullable = false)
+    @NotBlank(message = "Ubicacion es obligatoria")
     private String ubicacion;
 
-    @Column(nullable = false, name = "fecha_inicio")
+    @NotNull(message = "La fecha de inicio es obligatoria")
     private LocalDate fechaInicio;
 
-    @Column(nullable = false)
     private LocalDate fechaFin;
 
-    @Column(nullable = false, name = "hora_inicio")
+    @NotNull(message = "La hora de inicio es obligatoria")
     private LocalTime horaInicio;
 
-    @Column(name = "hora_fin")
     private LocalTime horaFin;
 
-    @Column(nullable = false, name = "max_estudiantes")
+    @NotNull(message = "El maximo de estudiantes es obligatorio")
+    @Min(value = 1, message = "Debe tener al menos 1 estudiante")
     private Integer maxEstudiantes;
 
-    @ManyToOne
-    @JoinColumn(name = "instructor_id", nullable = false)
-    private Usuario instructor;
+    @NotNull(message = "El ID del instructor es obligatorio")
+    private Long instructorId;
 
-
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+    public ActividadCreateDto(String nombre, String ubicacion, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Integer maxEstudiantes, Long instructorId) {
+        this.nombre = nombre;
+        this.ubicacion = ubicacion;
+        this.fechaInicio = fechaInicio;
+        this.fechaFin = fechaFin;
+        this.horaInicio = horaInicio;
+        this.horaFin = horaFin;
+        this.maxEstudiantes = maxEstudiantes;
+        this.instructorId = instructorId;
     }
 
     public String getNombre() {
@@ -106,11 +102,11 @@ public class Actividad {
         this.maxEstudiantes = maxEstudiantes;
     }
 
-    public Usuario getInstructor() {
-        return instructor;
+    public Long getInstructorId() {
+        return instructorId;
     }
 
-    public void setInstructor(Usuario instructor) {
-        this.instructor = instructor;
+    public void setInstructorId(Long instructorId) {
+        this.instructorId = instructorId;
     }
 }

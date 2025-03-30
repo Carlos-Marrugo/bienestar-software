@@ -16,11 +16,11 @@ public class UsuarioServices {
     private PasswordEncoder passwordEncoder;
 
 
-    public boolean authenticateUser(String email, String codigoEstudiantil){
+    public boolean authenticateUser(String email, String password){
 
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        return usuario.getCodigoEstudiantil().equals(codigoEstudiantil);
+        return usuario.getPassword().equals(password);
     }
 
     public String encodePassword(String rawPassword) {

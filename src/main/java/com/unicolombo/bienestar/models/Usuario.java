@@ -8,51 +8,28 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Entity
-@Table(name = "usuarios")
+@Table(name = "usuario")
 public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String nombre;
-
-    @Column(nullable = false)
-    private String apellido;
-
-    @Column(name = "email", unique = true, nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String rol; // "ESTUDIANTE" o "ADMIN"
+    private Role rol; // "ESTUDIANTE" o "ADMIN"
 
-    @Column(name = "codigo_estudiantil", nullable = false)
-    private String codigoEstudiantil;
 
     // --- UserDetails ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + rol));
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getApellido() {
-        return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
     }
 
     @Override
@@ -102,19 +79,14 @@ public class Usuario implements UserDetails {
         this.password = password;
     }
 
-    public String getRol() {
+    public Role getRol() {
         return rol;
     }
 
-    public void setRol(String rol) {
+    public void setRol(Role rol) {
         this.rol = rol;
     }
 
-    public String getCodigoEstudiantil() {
-        return codigoEstudiantil;
-    }
 
-    public void setCodigoEstudiantil(String codigoEstudiantil) {
-        this.codigoEstudiantil = codigoEstudiantil;
-    }
+
 }
