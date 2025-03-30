@@ -20,21 +20,27 @@ public class DataInitializer {
     @PostConstruct
     public void init() {
         // Crear ADMIN
+        /*
         Usuario admin = new Usuario();
-        admin.setEmail("admin@unicolombo.edu.co");
-        admin.setPassword(passwordEncoder.encode("admin123")); // ¡Asegúrate de codificar!
+        admin.setEmail("marrugo@unicolombo.edu.co");
+        admin.setPassword(passwordEncoder.encode("marrugo123"));
         admin.setRol(Role.ADMIN);
         admin.setNombre("Admin");
-        admin.setApellido("Principal");
+        admin.setApellido("Vargas");
         usuarioRepository.save(admin);
+        */
+
 
         // Crear INSTRUCTOR
+        /*
         Usuario instructor = new Usuario();
-        instructor.setEmail("instructor@unicolombo.edu.co");
-        instructor.setPassword(passwordEncoder.encode("instructor123"));
+        instructor.setEmail("sarah@unicolombo.edu.co");
+        instructor.setPassword(passwordEncoder.encode("sarah123"));
         instructor.setRol(Role.INSTRUCTOR);
-        instructor.setNombre("Carlos");
-        instructor.setApellido("Martinez");
+        instructor.setNombre("Sarah");
+        instructor.setApellido("Marenco");
         usuarioRepository.save(instructor);
+        */
+
     }
 }
