@@ -31,7 +31,7 @@ public class ActividadService {
             throw new RuntimeException("El usuario con ID " + dto.getInstructorId() + " no es un instructor");
         }
 
-        // Crear la actividad
+
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
         actividad.setUbicacion(dto.getUbicacion());

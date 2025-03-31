@@ -2,7 +2,6 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.LoginEstudianteRequest;
 import com.unicolombo.bienestar.dto.LoginRequest;
-import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.services.AuthService;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -28,13 +28,13 @@ public class AuthController {
     private JwtService jwtService;
 
     @PostMapping("/login")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             Usuario usuario = authService.authenticate(request.getEmail(), request.getPassword());
 
+            // Validar que no sea estudiante
             if (usuario.getRol() == Role.ESTUDIANTE) {
-                throw new RuntimeException("Los estudiantes deben usar el endpoint especial de login");
+                throw new RuntimeException("Los estudiantes deben usar /login-estudiante");
             }
 
             String token = jwtService.generateToken(usuario);
@@ -50,27 +50,40 @@ public class AuthController {
                     )
             ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", e.getMessage(),
+                    "timestamp", System.currentTimeMillis()
+            ));
         }
     }
 
-    //logeo como estudiante
     @PostMapping("/login-estudiante")
     public ResponseEntity<?> loginEstudiante(@Valid @RequestBody LoginEstudianteRequest request) {
-        Usuario usuario = authService.authenticateEstudiante(
-                request.getEmail(),
-                request.getCodigoEstudiantil()
-        );
+        try {
+            Usuario usuario = authService.authenticate(
+                    request.getEmail(),
+                    request.getCodigoEstudiantil()
+            );
 
-        String token = jwtService.generateToken(usuario);
+            String token = jwtService.generateToken(usuario);
 
-        return ResponseEntity.ok(Map.of(
-                "token", token,
-                "usuario", Map.of(
-                        "id", usuario.getId(),
-                        "email", usuario.getEmail(),
-                        "codigoEstudiantil", usuario.getEstudiante().getCodigoEstudiantil()
-            )
-        ));
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "usuario", Map.of(
+                            "id", usuario.getId(),
+                            "email", usuario.getEmail(),
+                            "rol", usuario.getRol().name(),
+                            "nombre", usuario.getNombre(),
+                            "apellido", usuario.getApellido(),
+                            "codigoEstudiantil", usuario.getEstudiante().getCodigoEstudiantil(),
+                            "horasAcumuladas", usuario.getEstudiante().getHorasAcumuladas()
+                    )
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", e.getMessage(),
+                    "timestamp", System.currentTimeMillis()
+            ));
+        }
     }
 }

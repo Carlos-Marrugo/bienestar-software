@@ -7,11 +7,10 @@ import lombok.Data;
 
 @Data
 public class LoginEstudianteRequest {
-    @NotBlank
-    @Email
+    @NotBlank @Email
     private String email;
 
     @NotBlank
-    @Pattern(regexp = "^UC\\d{6}$", message = "Formato: UC######")
+    @Pattern(regexp = "^UC\\d{6}$", message = "El código estudiantil debe tener formato UC######")
     private String codigoEstudiantil;
 }
