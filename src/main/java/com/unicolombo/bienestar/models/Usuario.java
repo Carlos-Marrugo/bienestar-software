@@ -31,6 +31,12 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private Role rol; // "ESTUDIANTE" o "ADMIN"
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean activo = true;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Estudiante estudiante;
+
 
     // --- UserDetails ---
     @Override
