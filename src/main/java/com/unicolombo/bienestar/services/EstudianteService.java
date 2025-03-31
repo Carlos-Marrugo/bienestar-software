@@ -12,32 +12,34 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@Transactional
 public class EstudianteService {
 
     @Autowired
-    private UsuarioRepository usuarioRepository;
+    private UsuarioRepository usuarioRepo;
 
     @Autowired
-    private EstudianteRepository estudianteRepository;
+    private EstudianteRepository estudianteRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Transactional
-    public void registrarEstudiante(RegistroEstudianteDto dto) {
+    public Estudiante registrarEstudiante(RegistroEstudianteDto dto) {
+
         Usuario usuario = new Usuario();
+        usuario.setEmail(dto.getEmail());
         usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
         usuario.setNombre(dto.getNombre());
         usuario.setApellido(dto.getApellido());
         usuario.setRol(Role.ESTUDIANTE);
+        usuario = usuarioRepo.save(usuario);
 
-        usuarioRepository.save(usuario);
 
         Estudiante estudiante = new Estudiante();
         estudiante.setUsuario(usuario);
         estudiante.setCodigoEstudiantil(dto.getCodigoEstudiantil());
-        estudianteRepository.save(estudiante);
+        estudiante.setHorasAcumuladas(0);
 
+        return estudianteRepo.save(estudiante);
     }
-
 }
