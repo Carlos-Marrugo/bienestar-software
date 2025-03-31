@@ -1,11 +1,13 @@
 package com.unicolombo.bienestar.controllers;
 
+import com.unicolombo.bienestar.dto.LoginEstudianteRequest;
 import com.unicolombo.bienestar.dto.LoginRequest;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.services.AuthService;
 import com.unicolombo.bienestar.services.JwtService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,5 +52,25 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    //logeo como estudiante
+    @PostMapping("/login-estudiante")
+    public ResponseEntity<?> loginEstudiante(@Valid @RequestBody LoginEstudianteRequest request) {
+        Usuario usuario = authService.authenticateEstudiante(
+                request.getEmail(),
+                request.getCodigoEstudiantil()
+        );
+
+        String token = jwtService.generateToken(usuario);
+
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "usuario", Map.of(
+                        "id", usuario.getId(),
+                        "email", usuario.getEmail(),
+                        "codigoEstudiantil", usuario.getEstudiante().getCodigoEstudiantil()
+            )
+        ));
     }
 }
