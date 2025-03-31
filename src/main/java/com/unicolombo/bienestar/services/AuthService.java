@@ -16,25 +16,24 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public Usuario authenticate(String email, String password) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        if (!passwordEncoder.matches(password, usuario.getPassword())) {
-            throw new RuntimeException("Credenciales inválidas");
-        }
-
-        return usuario;
-    }
-
-    public Usuario authenticateEstudiante(String email, String codigo) {
+    public Usuario authenticate(String email, String credencial) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
 
-        if (usuario.getRol() != Role.ESTUDIANTE ||
-                usuario.getEstudiante() == null ||
-                !usuario.getEstudiante().getCodigoEstudiantil().equalsIgnoreCase(codigo)) {
-            throw new RuntimeException("Credenciales inválidas");
+        switch(usuario.getRol()) {
+            case ESTUDIANTE:
+                if (usuario.getEstudiante() == null ||
+                        !usuario.getEstudiante().getCodigoEstudiantil().equals(credencial)) {
+                    throw new RuntimeException("Código estudiantil incorrecto");
+                }
+                break;
+
+            case ADMIN:
+            case INSTRUCTOR:
+                if (!passwordEncoder.matches(credencial, usuario.getPassword())) {
+                    throw new RuntimeException("Contraseña incorrecta");
+                }
+                break;
         }
 
         return usuario;

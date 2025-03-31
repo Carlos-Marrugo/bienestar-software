@@ -62,6 +62,9 @@ public class Usuario implements UserDetails {
 
     @Override
     public String getPassword() {
+        if (this.rol == Role.ESTUDIANTE && this.estudiante != null) {
+            return this.estudiante.getCodigoEstudiantil();
+        }
         return this.password;
     }
 
