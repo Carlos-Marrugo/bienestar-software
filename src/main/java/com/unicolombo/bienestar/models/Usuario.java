@@ -115,6 +115,23 @@ public class Usuario implements UserDetails {
         this.rol = rol;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
 
+    public boolean isActivo() {
+        return activo;
+    }
 
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
+
+    public Estudiante getEstudiante() {
+        return estudiante;
+    }
+
+    public void setEstudiante(Estudiante estudiante) {
+        this.estudiante = estudiante;
+    }
 }
