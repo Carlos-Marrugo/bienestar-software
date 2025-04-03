@@ -44,4 +44,35 @@ public class ActividadService {
 
         return actividadRepository.save(actividad);
     }
+
+
+    //editar actividad
+    public Actividad editarActividad(Long id, ActividadCreateDto dto){
+        Actividad actividad = actividadRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Actividad no encontrada con id: "+id));
+
+        actividad.setNombre(dto.getNombre());
+        actividad.setUbicacion(dto.getUbicacion());
+        actividad.setFechaInicio(dto.getFechaInicio());
+        actividad.setFechaFin(dto.getFechaFin());
+        actividad.setHoraInicio(dto.getHoraInicio());
+        actividad.setHoraFin(dto.getHoraFin());
+        actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
+
+        if(!actividad.getInstructor().getId().equals(dto.getInstructorId())){
+            Usuario nuevoInstructor = usuarioRepository.findById(dto.getInstructorId())
+                    .orElseThrow(() -> new RuntimeException("Instructor no encontrado"));
+            actividad.setInstructor(nuevoInstructor);
+        }
+        return actividadRepository.save(actividad);
+    }
+
+    //eliminar
+    public void eliminarActividad(Long id) {
+        if(!actividadRepository.existsById(id)){
+            throw new RuntimeException("Actividad no encontrada con id: "+id);
+        }
+        actividadRepository.deleteById(id);
+    }
+
 }

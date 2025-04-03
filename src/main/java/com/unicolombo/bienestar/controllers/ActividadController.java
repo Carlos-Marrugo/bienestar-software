@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.services.ActividadService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ public class ActividadController {
     @Autowired
     private ActividadService actividadService;
 
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> crearActividad(
@@ -48,6 +50,51 @@ public class ActividadController {
                             "message", e.getMessage(),
                             "timestamp", LocalDateTime.now()
                     ));
+        }
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> editarActividad(
+            @PathVariable Long id,
+            @Valid @RequestBody ActividadCreateDto dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Actividad actividadActualizada = actividadService.editarActividad(id, dto);
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Actividad actualizada exitosamente",
+                    "data", actividadActualizada
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage(),
+                    "timestamp", LocalDateTime.now()
+            ));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> eliminarActividad(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            actividadService.eliminarActividad(id);
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Actividad eliminada exitosamente",
+                    "id", id
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage(),
+                    "timestamp", LocalDateTime.now()
+            ));
         }
     }
 }
