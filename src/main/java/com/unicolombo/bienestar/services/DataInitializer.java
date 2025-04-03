@@ -32,7 +32,7 @@ public class DataInitializer {
 
 */
         // Crear INSTRUCTOR
-
+        /*
         Usuario instructor = new Usuario();
         instructor.setEmail("annabelle@unicolombo.edu.co");
         instructor.setPassword(passwordEncoder.encode("annabelle123"));
@@ -48,7 +48,7 @@ public class DataInitializer {
         instructor1.setNombre("Ashley");
         instructor1.setApellido("Riff");
         usuarioRepository.save(instructor);
-
+         */
 
     }
 }
