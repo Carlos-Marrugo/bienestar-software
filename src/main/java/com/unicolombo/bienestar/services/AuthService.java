@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.LoginRequest;
+import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,12 +16,24 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public Usuario authenticate(String email, String password) {
+    public Usuario authenticate(String email, String credencial) {
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
 
-        if (!passwordEncoder.matches(password, usuario.getPassword())) {
-            throw new RuntimeException("Credenciales inválidas");
+        switch(usuario.getRol()) {
+            case ESTUDIANTE:
+                if (usuario.getEstudiante() == null ||
+                        !usuario.getEstudiante().getCodigoEstudiantil().equals(credencial)) {
+                    throw new RuntimeException("Código estudiantil incorrecto");
+                }
+                break;
+
+            case ADMIN:
+            case INSTRUCTOR:
+                if (!passwordEncoder.matches(credencial, usuario.getPassword())) {
+                    throw new RuntimeException("Contraseña incorrecta");
+                }
+                break;
         }
 
         return usuario;
