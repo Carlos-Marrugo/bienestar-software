@@ -7,6 +7,10 @@ import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,6 +23,24 @@ public class ActividadService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    //paginacion
+    public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro) {
+
+        if (page < 0) throw new IllegalArgumentException("El número de página no puede ser negativo");
+        if (size <= 0 || size > 100) throw new IllegalArgumentException("El tamaño de página debe estar entre 1 y 100");
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("ubicacion").descending());
+
+        if (filtro != null && !filtro.isEmpty()) {
+            if (!filtro.matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]+$")) {
+                throw new IllegalArgumentException("Filtro contiene caracteres no permitidos");
+            }
+            return actividadRepository.findByNombreContainingIgnoreCase(filtro, pageable);
+        }
+
+        return actividadRepository.findAll(pageable);
+    }
 
     @Transactional
     public Actividad crearActividad(ActividadCreateDto dto) {
