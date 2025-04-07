@@ -2,7 +2,6 @@ package com.unicolombo.bienestar.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +10,7 @@ import java.util.List;
 @Table(name = "instructor")
 @Data
 public class Instructor {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,11 +23,13 @@ public class Instructor {
     private String especialidad;
 
     @Column(nullable = false)
-    private String certificaciones;
+    private LocalDate fechaContratacion;
 
-    @OneToMany(mappedBy = "instructor", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "instructor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Actividad> actividades = new ArrayList<>();
 
-    @Column(nullable = false)
-    private LocalDate fechaContratacion;
+
+    public String getNombreCompleto() {
+        return usuario.getNombre() + " " + usuario.getApellido();
+    }
 }

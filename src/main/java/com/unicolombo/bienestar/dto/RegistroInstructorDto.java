@@ -28,9 +28,6 @@ public class RegistroInstructorDto {
     @NotBlank(message = "Especialidad es obligatoria")
     private String especialidad;
 
-    @NotBlank(message = "Certificaciones son obligatorias")
-    private String certificaciones;
-
     @NotNull(message = "Fecha de contratación es obligatoria")
     @PastOrPresent(message = "Fecha de contratación no puede ser futura")
     private LocalDate fechaContratacion;
