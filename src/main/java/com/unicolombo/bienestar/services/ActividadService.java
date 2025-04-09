@@ -62,7 +62,8 @@ public class ActividadService {
         actividad.setHoraInicio(dto.getHoraInicio());
         actividad.setHoraFin(dto.getHoraFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
-        actividad.setInstructor(instructor);
+        actividad.setInstructor(dto.getInstructorId());
+        
 
         return actividadRepository.save(actividad);
     }
