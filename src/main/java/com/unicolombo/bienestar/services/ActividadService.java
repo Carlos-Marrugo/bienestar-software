@@ -2,9 +2,11 @@ package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.models.Actividad;
+import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
+import com.unicolombo.bienestar.repositories.InstructorRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,6 +26,9 @@ public class ActividadService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private InstructorRepository instructorRepository;
+
     //paginacion
     public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro) {
 
@@ -41,19 +46,17 @@ public class ActividadService {
 
         return actividadRepository.findAll(pageable);
     }
-
     @Transactional
     public Actividad crearActividad(ActividadCreateDto dto) {
         // obtener instructor
-        Usuario instructor = usuarioRepository.findById(dto.getInstructorId())
+        Instructor instructor = instructorRepository.findById(dto.getInstructorId())
                 .orElseThrow(() -> new RuntimeException("Instructor no encontrado con ID: " + dto.getInstructorId()));
-
+    
         // verificacion si es un instructor
-        if (instructor.getRol() != Role.INSTRUCTOR) {
+        if (instructor.getUsuario().getRol() != Role.INSTRUCTOR) {
             throw new RuntimeException("El usuario con ID " + dto.getInstructorId() + " no es un instructor");
         }
-
-
+    
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
         actividad.setUbicacion(dto.getUbicacion());
@@ -62,18 +65,16 @@ public class ActividadService {
         actividad.setHoraInicio(dto.getHoraInicio());
         actividad.setHoraFin(dto.getHoraFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
-        actividad.setInstructor(dto.getInstructorId());
+        actividad.setInstructor(instructor); 
         
-
         return actividadRepository.save(actividad);
     }
 
-
     //editar actividad
-    public Actividad editarActividad(Long id, ActividadCreateDto dto){
+    public Actividad editarActividad(Long id, ActividadCreateDto dto) {
         Actividad actividad = actividadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Actividad no encontrada con id: "+id));
-
+    
         actividad.setNombre(dto.getNombre());
         actividad.setUbicacion(dto.getUbicacion());
         actividad.setFechaInicio(dto.getFechaInicio());
@@ -81,15 +82,14 @@ public class ActividadService {
         actividad.setHoraInicio(dto.getHoraInicio());
         actividad.setHoraFin(dto.getHoraFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
-
-        if(!actividad.getInstructor().getId().equals(dto.getInstructorId())){
-            Usuario nuevoInstructor = usuarioRepository.findById(dto.getInstructorId())
+    
+        if(!actividad.getInstructor().getId().equals(dto.getInstructorId())) {
+            Instructor nuevoInstructor = instructorRepository.findById(dto.getInstructorId())
                     .orElseThrow(() -> new RuntimeException("Instructor no encontrado"));
             actividad.setInstructor(nuevoInstructor);
         }
         return actividadRepository.save(actividad);
     }
-
     //eliminar
     public void eliminarActividad(Long id) {
         if(!actividadRepository.existsById(id)){
