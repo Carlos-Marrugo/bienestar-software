@@ -38,6 +38,8 @@ public class Usuario implements UserDetails {
     private Estudiante estudiante;
 
 
+
+
     // --- UserDetails ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
