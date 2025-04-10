@@ -32,4 +32,5 @@ public class Instructor {
     public String getNombreCompleto() {
         return usuario.getNombre() + " " + usuario.getApellido();
     }
+
 }

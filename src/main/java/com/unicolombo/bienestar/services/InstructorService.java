@@ -26,7 +26,7 @@ public class InstructorService {
     private final PasswordEncoder passwordEncoder;
 
     public Instructor registrarInstructor(RegistroInstructorDto dto) {
-        if (usuarioRepository.exitsByEmail(dto.getEmail())) {
+        if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new BusinessException("El email ya está registrado");
         }
 
