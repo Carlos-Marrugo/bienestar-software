@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Credenciales
+.env
+application-dev.properties
+application-prod.properties
