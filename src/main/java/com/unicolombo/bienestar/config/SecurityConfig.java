@@ -4,6 +4,7 @@ import com.unicolombo.bienestar.filters.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -18,7 +19,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
-
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,8 +28,17 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    /*
+    @Bean
+    public PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+        PropertySourcesPlaceholderConfigurer configurer = new PropertySourcesPlaceholderConfigurer();
+        configurer.setLocation(new FileSystemResource("./application-secrets.properties"));
+        configurer.setIgnoreResourceNotFound(true);
+        return configurer;
+    }*/
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

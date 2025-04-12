@@ -33,6 +33,5 @@ build/
 .vscode/
 
 # Credenciales
+application-secrets.properties
 .env
-application-dev.properties
-application-prod.properties
