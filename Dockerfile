@@ -1,3 +1,6 @@
-FROM openjdk:21-jdk-alpine
-COPY target/dockerized.postgresql-0.0.1-SNAPSHOT.jar java-app.jar
-ENTRYPOINT ["java", "-jar", "bienestar-app.jar"]
+FROM eclipse-temurin:21-jdk-jammy
+
+WORKDIR /app
+COPY target/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
