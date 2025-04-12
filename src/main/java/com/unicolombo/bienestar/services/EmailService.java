@@ -8,6 +8,7 @@ import org.thymeleaf.context.Context;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class EmailService {
@@ -20,24 +21,41 @@ public class EmailService {
         this.templateEngine = templateEngine;
     }
 
-    public void sendRegistrationEmail(String toEmail, String nombreUsuario) {
-        Map<String, Object> variables = Map.of("name", nombreUsuario);
+    public void sendWelcomeEmail(String toEmail, String nombre, String codigoEstudiantil) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("name", nombre);
+        variables.put("codigo", codigoEstudiantil);
+
         sendTemplateEmail(
                 toEmail,
-                "Bienvenido a Bienestar Universitario",
-                "emails/welcome",
+                "¡Bienvenido al Sistema de Bienestar!",
+                "emails/welcome-student",
                 variables
         );
     }
 
-    public void sendInstructorAssignment(String toEmail, String instructorName, String actividadNombre) {
-        Map<String, Object> variables = Map.of(
-                "instructorName", instructorName,
-                "actividadNombre", actividadNombre
-        );
+    public void sendLoginNotification(String toEmail, String nombre, String rol) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("name", nombre);
+        variables.put("rol", rol);
+        variables.put("fecha", java.time.LocalDateTime.now());
+
         sendTemplateEmail(
                 toEmail,
-                "Nueva asignación como instructor",
+                "Notificación de inicio de sesión",
+                "emails/login-notification",
+                variables
+        );
+    }
+
+    public void sendInstructorAssignment(String toEmail, String nombreInstructor, String actividadNombre) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("instructorName", nombreInstructor);
+        variables.put("actividadNombre", actividadNombre);
+
+        sendTemplateEmail(
+                toEmail,
+                "Has sido asignado a una nueva actividad",
                 "emails/instructor-assignment",
                 variables
         );
