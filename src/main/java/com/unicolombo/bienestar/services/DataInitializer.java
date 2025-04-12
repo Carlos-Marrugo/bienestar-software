@@ -25,15 +25,15 @@ public class DataInitializer {
     @PostConstruct
     public void init() {
         // Crear ADMIN (opcional)
-        /*
+    /*
         Usuario admin = new Usuario();
-        admin.setEmail("marrugo@unicolombo.edu.co");
-        admin.setPassword(passwordEncoder.encode("marrugo123"));
+        admin.setEmail("carlos.marrugovargas@unicolombo.edu.co");
+        admin.setPassword(passwordEncoder.encode("@elrprotuto1.NET"));
         admin.setRol(Role.ADMIN);
-        admin.setNombre("Admin");
+        admin.setNombre("Carlos");
         admin.setApellido("Vargas");
-        usuarioRepository.save(admin);
-        */
+        usuarioRepository.save(admin);*/
+
 
         /*
         // Crear INSTRUCTOR - Daniel Castilla
