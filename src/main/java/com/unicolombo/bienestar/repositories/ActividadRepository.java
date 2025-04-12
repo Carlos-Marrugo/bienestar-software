@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ActividadRepository extends JpaRepository<Actividad, Long> {
-    @Query("SELECT a FROM Actividad a WHERE LOWER(a.nombre) LIKE LOWER(concat('%', :filtro,'%'))")
+    @Query("SELECT a FROM Actividad a JOIN FETCH a.instructor i JOIN FETCH i.usuario WHERE LOWER(a.nombre) LIKE LOWER(concat('%', :filtro,'%'))")
     Page<Actividad> findByNombreContainingIgnoreCase(@Param("filtro") String filtro, Pageable pageable);
 }

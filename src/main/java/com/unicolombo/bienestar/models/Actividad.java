@@ -38,9 +38,9 @@ public class Actividad {
 
     @ManyToOne
     @JoinColumn(name = "instructor_id", nullable = false)
-    private Usuario instructor;
+    private Instructor instructor;
 
-
+    
 
     public Long getId() {
         return id;
@@ -106,11 +106,11 @@ public class Actividad {
         this.maxEstudiantes = maxEstudiantes;
     }
 
-    public Usuario getInstructor() {
+    public Instructor getInstructor() {
         return instructor;
     }
 
-    public void setInstructor(Usuario instructor) {
+    public void setInstructor(Instructor instructor) {
         this.instructor = instructor;
     }
 }
