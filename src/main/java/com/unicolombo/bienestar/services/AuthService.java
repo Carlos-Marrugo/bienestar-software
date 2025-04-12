@@ -16,6 +16,12 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private final EmailService emailService;
+
+    @Autowired
+    public AuthService(EmailService emailService){
+        this.emailService = emailService;
+    }
 
 
     public Usuario authenticate(String email, String credencial) {
@@ -28,6 +34,13 @@ public class AuthService {
                         !usuario.getEstudiante().getCodigoEstudiantil().equals(credencial)) {
                     throw new RuntimeException("Código estudiantil incorrecto");
                 }
+
+                //email si el inicio es correcto
+                emailService.sendLoginNotification(
+                        usuario.getEmail(),
+                        usuario.getNombre(),
+                        "Estudiante"
+                );
                 break;
 
             case ADMIN:
@@ -35,6 +48,12 @@ public class AuthService {
                 if (!passwordEncoder.matches(credencial, usuario.getPassword())) {
                     throw new RuntimeException("Contraseña incorrecta");
                 }
+
+                emailService.sendLoginNotification(
+                        usuario.getEmail(),
+                        usuario.getNombre(),
+                        usuario.getRol().name()
+                );
                 break;
         }
 
