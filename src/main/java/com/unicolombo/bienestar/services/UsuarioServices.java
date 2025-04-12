@@ -16,6 +16,7 @@ public class UsuarioServices {
     private PasswordEncoder passwordEncoder;
 
 
+
     public boolean authenticateUser(String email, String password){
 
         Usuario usuario = usuarioRepository.findByEmail(email)

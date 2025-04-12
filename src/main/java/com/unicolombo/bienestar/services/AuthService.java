@@ -5,6 +5,8 @@ import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+
 @Service
 public class AuthService {
 
@@ -13,6 +15,8 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+
 
     public Usuario authenticate(String email, String credencial) {
         Usuario usuario = usuarioRepository.findByEmail(email)
