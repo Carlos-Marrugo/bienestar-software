@@ -5,6 +5,8 @@ import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+
 @Service
 public class AuthService {
 
@@ -13,6 +15,14 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    private final EmailService emailService;
+
+    @Autowired
+    public AuthService(EmailService emailService){
+        this.emailService = emailService;
+    }
+
 
     public Usuario authenticate(String email, String credencial) {
         Usuario usuario = usuarioRepository.findByEmail(email)
@@ -24,6 +34,13 @@ public class AuthService {
                         !usuario.getEstudiante().getCodigoEstudiantil().equals(credencial)) {
                     throw new RuntimeException("Código estudiantil incorrecto");
                 }
+
+                //email si el inicio es correcto
+                emailService.sendLoginNotification(
+                        usuario.getEmail(),
+                        usuario.getNombre(),
+                        "Estudiante"
+                );
                 break;
 
             case ADMIN:
@@ -31,6 +48,12 @@ public class AuthService {
                 if (!passwordEncoder.matches(credencial, usuario.getPassword())) {
                     throw new RuntimeException("Contraseña incorrecta");
                 }
+
+                emailService.sendLoginNotification(
+                        usuario.getEmail(),
+                        usuario.getNombre(),
+                        usuario.getRol().name()
+                );
                 break;
         }
 

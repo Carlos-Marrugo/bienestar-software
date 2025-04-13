@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <body>
+        <h1>¡Bienvenido a Bienestar Universitario!</h1>
+            <p th:text="'Hola ' + ${name} + ','"></p>
+            <p>Tu registro como estudiante ha sido exitoso.</p>
+            <p>Tu código estudiantil es: <strong th:text="${codigo}"></strong></p>
+            <p>Ahora puedes acceder al sistema usando este código como contraseña.</p>
+    </body>
+</html>
