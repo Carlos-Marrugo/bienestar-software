@@ -46,8 +46,20 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Habilitar CORS
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/api/auth/**",
+                                "/api/estudiantes/registro"
+                        ).permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/actividades/creadas").hasRole("ADMIN")
                         .requestMatchers("/api/estudiantes/registro").permitAll()
+
                         .requestMatchers("http://localhost:5173").permitAll()
                         .requestMatchers("/api/auth/login-estudiante").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
