@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
+import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.models.Role;
@@ -11,9 +12,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+
 @Service
+@Slf4j
 public class ActividadService {
 
     @Autowired
@@ -39,17 +44,37 @@ public class ActividadService {
 
         return actividadRepository.findAll(pageable);
     }
+
+
     @Transactional
     public Actividad crearActividad(ActividadCreateDto dto) {
         // obtener instructor
         Instructor instructor = instructorRepository.findById(dto.getInstructorId())
-                .orElseThrow(() -> new RuntimeException("Instructor no encontrado con ID: " + dto.getInstructorId()));
-    
-        // verificacion si es un instructor
+                .orElseThrow(() -> {
+                    log.error("Instructor no encontrado con ID: {}", dto.getInstructorId());
+                    return new BusinessException("Instructor no encontrado");
+                });
+
         if (instructor.getUsuario().getRol() != Role.INSTRUCTOR) {
-            throw new RuntimeException("El usuario con ID " + dto.getInstructorId() + " no es un instructor");
+            log.warn("Usuario con ID {} no es instructor", dto.getInstructorId());
+            throw new BusinessException("El usuario no tiene rol de instructor");
         }
-    
+
+        // Validacion de capacidad min
+        if (dto.getMaxEstudiantes() < 5) {
+            throw new BusinessException("La capacidad mínima es de 5 estudiantes");
+        }
+
+        // Validacion de fechas
+        if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
+            throw new BusinessException("La fecha de fin no puede ser anterior a la fecha de inicio");
+        }
+
+        // Validacion de horarios
+        if (dto.getHoraFin() != null && dto.getHoraFin().isBefore(dto.getHoraInicio())) {
+            throw new BusinessException("La hora de fin no puede ser anterior a la hora de inicio");
+        }
+
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
         actividad.setUbicacion(dto.getUbicacion());
@@ -58,8 +83,9 @@ public class ActividadService {
         actividad.setHoraInicio(dto.getHoraInicio());
         actividad.setHoraFin(dto.getHoraFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
-        actividad.setInstructor(instructor); 
-        
+        actividad.setInstructor(instructor);
+
+        log.info("Guardando nueva actividad: {}", actividad.getNombre());
         return actividadRepository.save(actividad);
     }
 
@@ -67,7 +93,7 @@ public class ActividadService {
     public Actividad editarActividad(Long id, ActividadCreateDto dto) {
         Actividad actividad = actividadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Actividad no encontrada con id: "+id));
-    
+
         actividad.setNombre(dto.getNombre());
         actividad.setUbicacion(dto.getUbicacion());
         actividad.setFechaInicio(dto.getFechaInicio());
@@ -75,7 +101,7 @@ public class ActividadService {
         actividad.setHoraInicio(dto.getHoraInicio());
         actividad.setHoraFin(dto.getHoraFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
-    
+
         if(!actividad.getInstructor().getId().equals(dto.getInstructorId())) {
             Instructor nuevoInstructor = instructorRepository.findById(dto.getInstructorId())
                     .orElseThrow(() -> new RuntimeException("Instructor no encontrado"));
@@ -83,6 +109,7 @@ public class ActividadService {
         }
         return actividadRepository.save(actividad);
     }
+
     //eliminar
     public void eliminarActividad(Long id) {
         if(!actividadRepository.existsById(id)){

@@ -1,8 +1,14 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
+import com.unicolombo.bienestar.exceptions.ErrorResponse;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.services.ActividadService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +34,9 @@ public class ActividadController {
 
     @Autowired
     private ActividadService actividadService;
+
+
+
 
     @GetMapping("/creadas")
     @PreAuthorize("hasRole('ADMIN')")
@@ -85,11 +94,13 @@ public class ActividadController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            log.info("Intentando crear actividad por usuario: {}", userDetails.getUsername());
+            log.info("Creando actividad por admin: {}", userDetails.getUsername());
             log.info("Datos recibidos: {}", dto);
 
             Actividad actividad = actividadService.crearActividad(dto);
             return ResponseEntity.ok(actividad);
+
+
 
         } catch (RuntimeException e) {
             log.error("Error al crear actividad: {}", e.getMessage());
