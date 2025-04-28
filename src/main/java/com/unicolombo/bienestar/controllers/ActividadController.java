@@ -99,7 +99,7 @@ public class ActividadController {
     }
 
 
-    @PostMapping
+    @PostMapping("/nueva")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> crearActividad(
             @Valid @RequestBody ActividadCreateDto dto,

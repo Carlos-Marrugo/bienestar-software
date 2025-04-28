@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
@@ -16,6 +17,7 @@ public class Instructor {
     private Long id;
 
     @OneToOne
+    @JsonIgnoreProperties("instructor")
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
     private Usuario usuario;
 
@@ -26,6 +28,7 @@ public class Instructor {
     private LocalDate fechaContratacion;
 
     @OneToMany(mappedBy = "instructor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("instructor")
     private List<Actividad> actividades = new ArrayList<>();
 
 
