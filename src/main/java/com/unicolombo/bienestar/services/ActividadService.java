@@ -16,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 
 @Service
 @Slf4j
@@ -60,19 +63,24 @@ public class ActividadService {
             throw new BusinessException("El usuario no tiene rol de instructor");
         }
 
-        // Validacion de capacidad min
+        // Validación de capacidad mínima
         if (dto.getMaxEstudiantes() < 5) {
             throw new BusinessException("La capacidad mínima es de 5 estudiantes");
         }
 
-        // Validacion de fechas
+        // Validación de fechas
         if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
             throw new BusinessException("La fecha de fin no puede ser anterior a la fecha de inicio");
         }
 
-        // Validacion de horarios
+        // Validación de horarios
         if (dto.getHoraFin() != null && dto.getHoraFin().isBefore(dto.getHoraInicio())) {
             throw new BusinessException("La hora de fin no puede ser anterior a la hora de inicio");
+        }
+
+        // Validación de solapamiento de horarios
+        if (existeSolapamientoHorario(dto.getInstructorId(), dto.getFechaInicio(), dto.getHoraInicio(), dto.getHoraFin())) {
+            throw new BusinessException("El instructor ya tiene una actividad programada en ese horario");
         }
 
         Actividad actividad = new Actividad();
@@ -116,6 +124,15 @@ public class ActividadService {
             throw new RuntimeException("Actividad no encontrada con id: "+id);
         }
         actividadRepository.deleteById(id);
+    }
+
+
+    public boolean existeSolapamientoHorario(Long instructorId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
+        return actividadRepository.existsSolapamientoHorario(
+                instructorId,
+                fecha,
+                horaInicio,
+                horaFin);
     }
 
 }

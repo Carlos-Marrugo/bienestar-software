@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
+import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.exceptions.ErrorResponse;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.services.ActividadService;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,12 +32,22 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/actividades")
 @Slf4j
+@Tag(name = "Actividades", description = "Gestión de actividades deportivas y académicas")
+
 public class ActividadController {
 
     @Autowired
     private ActividadService actividadService;
 
-
+    //swagger
+    @Operation(summary = "Crear nueva actividad", description = "Requiere rol ADMIN")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Actividad creada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "No autorizado"),
+            @ApiResponse(responseCode = "409", description = "Conflicto (horario ocupado)")
+    })
 
 
     @GetMapping("/creadas")
@@ -90,27 +102,21 @@ public class ActividadController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> crearActividad(
-            @RequestBody ActividadCreateDto dto,
+            @Valid @RequestBody ActividadCreateDto dto,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        try {
-            log.info("Creando actividad por admin: {}", userDetails.getUsername());
-            log.info("Datos recibidos: {}", dto);
+        log.info("Creando actividad por admin: {}", userDetails.getUsername());
 
-            Actividad actividad = actividadService.crearActividad(dto);
-            return ResponseEntity.ok(actividad);
+        Actividad actividad = actividadService.crearActividad(dto);
 
-
-
-        } catch (RuntimeException e) {
-            log.error("Error al crear actividad: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of(
-                            "error", "No tienes permiso para realizar esta acción",
-                            "message", e.getMessage(),
-                            "timestamp", LocalDateTime.now()
-                    ));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                Map.of(
+                        "status", "success",
+                        "message", "Actividad creada exitosamente",
+                        "data", actividad,
+                        "timestamp", LocalDateTime.now()
+                )
+        );
     }
 
     @PutMapping("/{id}")
