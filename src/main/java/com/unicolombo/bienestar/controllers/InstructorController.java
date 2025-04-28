@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/admin/instructores")
+@RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class InstructorController {
 
@@ -29,7 +29,7 @@ public class InstructorController {
         this.instructorService = instructorService;
     }
 
-    @PostMapping
+    @PostMapping("/agregar-instructor")
     public ResponseEntity<?> registrarInstructor(
             @Valid @RequestBody RegistroInstructorDto dto,
             BindingResult result) {

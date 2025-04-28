@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,7 +42,8 @@ public class InstructorService {
         Instructor instructor = new Instructor();
         instructor.setUsuario(usuario);
         instructor.setEspecialidad(dto.getEspecialidad());
-        instructor.setFechaContratacion(dto.getFechaContratacion());
+        ZoneId zonaColombia = ZoneId.of("America/Bogota");
+        instructor.setFechaContratacion(LocalDate.now(zonaColombia));
 
         return instructorRepository.save(instructor);
     }
@@ -51,7 +53,8 @@ public class InstructorService {
                 .orElseThrow(() -> new BusinessException("Instructor no encontrado o inactivo"));
 
         instructor.setEspecialidad(dto.getEspecialidad());
-        instructor.setFechaContratacion(dto.getFechaContratacion());
+        ZoneId zonaColombia = ZoneId.of("America/Bogota");
+        instructor.setFechaContratacion(LocalDate.now(zonaColombia));
 
         return instructorRepository.save(instructor);
     }
