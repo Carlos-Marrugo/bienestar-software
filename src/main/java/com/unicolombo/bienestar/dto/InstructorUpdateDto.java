@@ -9,7 +9,5 @@ public class InstructorUpdateDto {
     @NotBlank(message = "Especialidad es obligatoria")
     private String especialidad;
 
-    @NotNull(message = "Fecha de contratación es obligatoria")
-    @PastOrPresent(message = "Fecha de contratación no puede ser futura")
-    private LocalDate fechaContratacion;
+
 }

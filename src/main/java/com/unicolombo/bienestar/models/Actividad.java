@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -37,7 +38,8 @@ public class Actividad {
     private Integer maxEstudiantes;
 
     @ManyToOne
-    @JoinColumn(name = "instructor_id", nullable = false)
+    @JsonIgnoreProperties("actividades")
+    @JoinColumn(name = "instructor_id", referencedColumnName = "id")
     private Instructor instructor;
 
     
