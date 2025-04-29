@@ -93,11 +93,16 @@ public class EmailService {
             log.error("Error en la dirección de correo: {}", e.getMessage());
             throw new EmailServiceException("Dirección de correo inválida", e);
         } catch (MessagingException e) {
+<<<<<<< HEAD
             log.error("Error al enviar correo a {}: {}", to, e.getMessage());
             throw new EmailServiceException("Error al enviar el correo electrónico", e);
         } catch (Exception e) {
             log.error("Error inesperado al enviar correo: {}", e.getMessage());
             throw new EmailServiceException("Error interno del servidor", e);
+=======
+
+            throw new EmailServiceException("Error al enviar email a: " + to, e);
+>>>>>>> b8fbd0b953125c2492453735b9b3cc4078a9de42
         }
     }
 }
