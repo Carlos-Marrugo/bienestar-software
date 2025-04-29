@@ -76,6 +76,7 @@ public class EmailService {
 
             mailSender.send(message);
         } catch (MessagingException e) {
+
             throw new EmailServiceException("Error al enviar email a: " + to, e);
         }
     }
