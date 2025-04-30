@@ -108,4 +108,19 @@ public class AuthController {
             ));
         }
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody LoginRequest request) {
+        try {
+            authService.sendResetPasswordEmail(request.getEmail());
+            return ResponseEntity.ok(Map.of(
+                    "message", "Correo enviado con instrucciones para restablecer la contraseña"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", e.getMessage(),
+                    "timestamp", System.currentTimeMillis()
+            ));
+        }
+    }
 }
