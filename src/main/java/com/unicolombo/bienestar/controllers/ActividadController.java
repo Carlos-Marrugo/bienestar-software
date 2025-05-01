@@ -4,6 +4,11 @@ import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.exceptions.ErrorResponse;
 import com.unicolombo.bienestar.models.Actividad;
+import com.unicolombo.bienestar.models.Inscripcion;
+import com.unicolombo.bienestar.models.Role;
+import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.repositories.ActividadRepository;
+import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.ActividadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,7 +21,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,17 +47,34 @@ public class ActividadController {
 
     @Autowired
     private ActividadService actividadService;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+    @Autowired
+    private ActividadRepository actividadRepository;
 
     //swagger
     @Operation(summary = "Crear nueva actividad", description = "Requiere rol ADMIN")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Actividad creada exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "No autorizado"),
-            @ApiResponse(responseCode = "409", description = "Conflicto (horario ocupado)")
-    })
 
+
+    @PostMapping("/nueva")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> crearActividad(
+            @Valid @RequestBody ActividadCreateDto dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        log.info("Creando actividad por admin: {}", userDetails.getUsername());
+
+        Actividad actividad = actividadService.crearActividad(dto, userDetails.getUsername());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                Map.of(
+                        "status", "success",
+                        "message", "Actividad creada exitosamente",
+                        "data", actividad,
+                        "timestamp", LocalDateTime.now()
+                )
+        );
+    }
 
     @GetMapping("/creadas")
     @PreAuthorize("hasRole('ADMIN')")
@@ -79,6 +105,58 @@ public class ActividadController {
         }
     }
 
+    @Operation(summary = "Listar actividades del instructor", description = "Requiere rol INSTRUCTOR o ADMIN")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+            @ApiResponse(responseCode = "403", description = "No autorizado"),
+            @ApiResponse(responseCode = "404", description = "Instructor no encontrado")
+    })
+    @GetMapping("/instructor/{instructorId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('INSTRUCTOR') and #instructorId == principal.instructor.id)")
+    public ResponseEntity<?> getActividadesPorInstructor(
+            @PathVariable Long instructorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+            if (usuario.getRol() == Role.INSTRUCTOR &&
+                    !usuario.getId().equals(instructorId)) {
+                throw new AccessDeniedException("Solo puedes ver tus propias actividades");
+            }
+
+            Page<Actividad> actividades = actividadService.findByInstructorId(instructorId, page, size);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "data", actividades.getContent().stream().map(this::mapearActividadDto),
+                    "pagination", Map.of(
+                            "currentPage", actividades.getNumber(),
+                            "totalItems", actividades.getTotalElements(),
+                            "totalPages", actividades.getTotalPages()
+                    )
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "Error al listar actividades del instructor"
+            ));
+        }
+    }
+
     private Map<String, Object> mapearActividadDto(Actividad actividad) {
         return Map.of(
                 "id", actividad.getId(),
@@ -98,26 +176,6 @@ public class ActividadController {
         );
     }
 
-
-    @PostMapping("/nueva")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> crearActividad(
-            @Valid @RequestBody ActividadCreateDto dto,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        log.info("Creando actividad por admin: {}", userDetails.getUsername());
-
-        Actividad actividad = actividadService.crearActividad(dto, userDetails.getUsername());
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                Map.of(
-                        "status", "success",
-                        "message", "Actividad creada exitosamente",
-                        "data", actividad,
-                        "timestamp", LocalDateTime.now()
-                )
-        );
-    }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")

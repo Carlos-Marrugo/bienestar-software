@@ -56,6 +56,10 @@ public class ActividadService {
         return actividadRepository.findAll(pageable);
     }
 
+    public Page<Actividad> findByInstructorId(Long instructorId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").descending());
+        return actividadRepository.findByInstructorId(instructorId, pageable);
+    }
 
     @Transactional
     public Actividad crearActividad(ActividadCreateDto dto, String emailUsuario) {
