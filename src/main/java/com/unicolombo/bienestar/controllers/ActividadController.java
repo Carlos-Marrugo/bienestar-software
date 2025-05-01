@@ -3,10 +3,7 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.exceptions.ErrorResponse;
-import com.unicolombo.bienestar.models.Actividad;
-import com.unicolombo.bienestar.models.Inscripcion;
-import com.unicolombo.bienestar.models.Role;
-import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.ActividadService;
@@ -158,6 +155,28 @@ public class ActividadController {
     }
 
     private Map<String, Object> mapearActividadDto(Actividad actividad) {
+        Instructor instructor = actividad.getInstructor();
+        Usuario usuarioInstructor = actividad.getInstructor().getUsuario();
+
+        Map<String,Object> instructorMap = new LinkedHashMap<>();
+        instructorMap.put("id", instructor.getId());
+        instructorMap.put("nombre", Map.of(
+                "id", instructor.getId(),
+                "usuario", Map.of(
+                        "id", usuarioInstructor.getId(),
+                        "nombre", usuarioInstructor.getNombre(),
+                        "apellido", usuarioInstructor.getApellido(),
+                        "email", usuarioInstructor.getEmail(),
+                        "rol", usuarioInstructor.getRol().name(),
+                        "activo", usuarioInstructor.isActivo()
+
+                ),
+                "especialidad", instructor.getEspecialidad(),
+                "fechaContratacion", instructor.getFechaContratacion(),
+                "nombreCompleto", instructor.getNombreCompleto()
+
+        ));
+
         return Map.of(
                 "id", actividad.getId(),
                 "nombre", actividad.getNombre(),
@@ -167,12 +186,7 @@ public class ActividadController {
                 "horaInicio", actividad.getHoraInicio(),
                 "horaFin", actividad.getHoraFin(),
                 "maxEstudiantes", actividad.getMaxEstudiantes(),
-                //"inscritos", actividad.getInscripciones().size(),
-                "instructor", Map.of(
-                        "id", actividad.getInstructor().getId(),
-                        "nombre", actividad.getInstructor()
-                )
-                //"creadoEn", actividad.getCreatedAt()
+                "instructor", instructorMap
         );
     }
 
