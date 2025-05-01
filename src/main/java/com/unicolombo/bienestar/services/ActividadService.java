@@ -5,8 +5,10 @@ import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.models.Role;
+import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
 import com.unicolombo.bienestar.repositories.InstructorRepository;
+import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +32,12 @@ public class ActividadService {
     @Autowired
     private InstructorRepository instructorRepository;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private AuditoriaService auditoriaService;
+
     //paginacion
     public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro) {
 
@@ -50,7 +58,7 @@ public class ActividadService {
 
 
     @Transactional
-    public Actividad crearActividad(ActividadCreateDto dto) {
+    public Actividad crearActividad(ActividadCreateDto dto, String emailUsuario) {
         // obtener instructor
         Instructor instructor = instructorRepository.findById(dto.getInstructorId())
                 .orElseThrow(() -> {
@@ -58,27 +66,27 @@ public class ActividadService {
                     return new BusinessException("Instructor no encontrado");
                 });
 
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+
         if (instructor.getUsuario().getRol() != Role.INSTRUCTOR) {
             log.warn("Usuario con ID {} no es instructor", dto.getInstructorId());
             throw new BusinessException("El usuario no tiene rol de instructor");
         }
 
-        // Validación de capacidad mínima
         if (dto.getMaxEstudiantes() < 5) {
             throw new BusinessException("La capacidad mínima es de 5 estudiantes");
         }
 
-        // Validación de fechas
         if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
             throw new BusinessException("La fecha de fin no puede ser anterior a la fecha de inicio");
         }
 
-        // Validación de horarios
         if (dto.getHoraFin() != null && dto.getHoraFin().isBefore(dto.getHoraInicio())) {
             throw new BusinessException("La hora de fin no puede ser anterior a la hora de inicio");
         }
 
-        // Validación de solapamiento de horarios
         if (existeSolapamientoHorario(dto.getInstructorId(), dto.getFechaInicio(), dto.getHoraInicio(), dto.getHoraFin())) {
             throw new BusinessException("El instructor ya tiene una actividad programada en ese horario");
         }
@@ -94,6 +102,12 @@ public class ActividadService {
         actividad.setInstructor(instructor);
 
         log.info("Guardando nueva actividad: {}", actividad.getNombre());
+
+        auditoriaService.registrarAccion(actividad,
+                usuario,
+                "CREACION",
+                "Actividad creada: " + actividad.getNombre()
+        );
         return actividadRepository.save(actividad);
     }
 

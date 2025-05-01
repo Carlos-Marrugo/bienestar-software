@@ -107,7 +107,7 @@ public class ActividadController {
 
         log.info("Creando actividad por admin: {}", userDetails.getUsername());
 
-        Actividad actividad = actividadService.crearActividad(dto);
+        Actividad actividad = actividadService.crearActividad(dto, userDetails.getUsername());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 Map.of(

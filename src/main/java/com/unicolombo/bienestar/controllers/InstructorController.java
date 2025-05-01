@@ -49,7 +49,7 @@ public class InstructorController {
         }
     }
 
-    @GetMapping
+    @GetMapping("/instructores-activos")
     public ResponseEntity<?> listarInstructores() {
         List<Instructor> instructores = instructorService.listarInstructoresActivos();
         return ResponseEntity.ok()
