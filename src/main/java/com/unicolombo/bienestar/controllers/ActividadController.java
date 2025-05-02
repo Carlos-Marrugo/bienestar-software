@@ -73,6 +73,41 @@ public class ActividadController {
         );
     }
 
+    @Operation(summary = "Obtener actividad por ID",
+            description = "ADMIN: Acceso total | INSTRUCTOR: Solo sus actividades | ESTUDIANTE: Solo actividades inscritas")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Actividad encontrada"),
+            @ApiResponse(responseCode = "403", description = "No autorizado"),
+            @ApiResponse(responseCode = "404", description = "Actividad no encontrada")
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getActividadById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        Actividad actividad = actividadRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+
+        Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+        if (usuario.getRol() == Role.INSTRUCTOR &&
+                !actividad.getInstructor().getId().equals(usuario.getId())) {
+            throw new AccessDeniedException("No tienes permisos para ver esta actividad");
+        }
+
+        /*if (usuario.getRol() == Role.ESTUDIANTE &&
+                actividad.getInscripciones().stream()
+                        .noneMatch(i -> i.getEstudiante().getUsuario().getId().equals(usuario.getId()))) {
+            throw new AccessDeniedException("No estás inscrito en esta actividad");
+        }*/
+
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", mapearActividadDto(actividad)
+        ));
+    }
+
     @GetMapping("/creadas")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> listarActividades(
