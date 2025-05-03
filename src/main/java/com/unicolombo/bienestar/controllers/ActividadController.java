@@ -249,7 +249,7 @@ public class ActividadController {
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("eliminar/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> eliminarActividad(
             @PathVariable Long id,

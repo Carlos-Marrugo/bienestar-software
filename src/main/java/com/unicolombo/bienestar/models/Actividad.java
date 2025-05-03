@@ -6,6 +6,8 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "actividades")
@@ -41,6 +43,10 @@ public class Actividad {
     @JsonIgnoreProperties("actividades")
     @JoinColumn(name = "instructor_id", referencedColumnName = "id")
     private Instructor instructor;
+
+    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("actividad")
+    private List<AuditoriaActividad> auditorias = new ArrayList<>();
 
     
 

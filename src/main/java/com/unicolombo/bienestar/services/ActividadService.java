@@ -137,11 +137,19 @@ public class ActividadService {
     }
 
     //eliminar
+    @Transactional
     public void eliminarActividad(Long id) {
-        if(!actividadRepository.existsById(id)){
-            throw new RuntimeException("Actividad no encontrada con id: "+id);
-        }
-        actividadRepository.deleteById(id);
+        Actividad actividad = actividadRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada con id: " + id));
+
+        // Opción 1: Eliminación en cascada automática (requiere la modificación en la entidad)
+        actividadRepository.delete(actividad);
+
+        // Opción 2: Eliminación manual de registros relacionados
+    /*
+    auditoriaService.eliminarRegistrosPorActividad(id);
+    actividadRepository.delete(actividad);
+    */
     }
 
 
@@ -153,4 +161,8 @@ public class ActividadService {
                 horaFin);
     }
 
+    public Actividad findById(Long id) {
+        return actividadRepository.findById(1L)
+                .orElseThrow(()-> new BusinessException("Actividad no encontrada con id: "+id));
+    }
 }
