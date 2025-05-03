@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +18,11 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "S2RjYmxFM2ZsYVZXaWRTa0VMMEdmWjZYZUV4dzRjY0NacmlvT0VnT2NVRWlDTzNv";
+    @Value("${app.jwt.secret:S2RjYmxFM2ZsYVZXaWRTa0VMMEdmWjZYZUV4dzRjY0NacmlvT0VnT2NVRWlDTzNv}")
+    private String secretKey;
+
+    @Value("${app.jwt.expirationMs:86400000}") // 24 horas por defecto
+    private long jwtExpirationMs;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -37,7 +42,7 @@ public class JwtService {
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24 horas
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -55,7 +60,7 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .setSigningKey(getSignInKey())
                 .build()
@@ -64,7 +69,28 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public String renewTokenFromOldToken(String oldToken, UserDetails userDetails) {
+        try {
+            Claims claims = extractAllClaims(oldToken);
+
+            Map<String, Object> extraClaims = new HashMap<>();
+            // Solo copiamos claims seguros, evitando los que son manejados por JWT
+            for (Map.Entry<String, Object> entry : claims.entrySet()) {
+                if (!entry.getKey().equals(Claims.EXPIRATION) &&
+                        !entry.getKey().equals(Claims.ISSUED_AT) &&
+                        !entry.getKey().equals(Claims.SUBJECT)) {
+                    extraClaims.put(entry.getKey(), entry.getValue());
+                }
+            }
+
+            return generateToken(extraClaims, userDetails);
+        } catch (Exception e) {
+            // Si hay algún problema con el token antiguo, generamos uno nuevo desde cero
+            return generateToken(userDetails);
+        }
     }
 }

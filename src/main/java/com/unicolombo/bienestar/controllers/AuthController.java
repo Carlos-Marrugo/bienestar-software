@@ -2,10 +2,12 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.LoginEstudianteRequest;
 import com.unicolombo.bienestar.dto.LoginRequest;
+import com.unicolombo.bienestar.models.RefreshToken;
 import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.services.AuthService;
 import com.unicolombo.bienestar.services.JwtService;
+import com.unicolombo.bienestar.services.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +34,8 @@ public class AuthController {
 
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private RefreshTokenService refreshTokenService;
 
     @Operation(
             summary = "Login para administradores e instructores",

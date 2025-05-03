@@ -66,6 +66,7 @@ public class AuthService {
         return usuario;
     }
 
+
     public void sendResetPasswordEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("No existe un usuario con ese correo"));
