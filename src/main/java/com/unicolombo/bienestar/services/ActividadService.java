@@ -141,15 +141,7 @@ public class ActividadService {
     public void eliminarActividad(Long id) {
         Actividad actividad = actividadRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Actividad no encontrada con id: " + id));
-
-        // Opción 1: Eliminación en cascada automática (requiere la modificación en la entidad)
-        actividadRepository.delete(actividad);
-
-        // Opción 2: Eliminación manual de registros relacionados
-    /*
-    auditoriaService.eliminarRegistrosPorActividad(id);
-    actividadRepository.delete(actividad);
-    */
+        
     }
 
 
