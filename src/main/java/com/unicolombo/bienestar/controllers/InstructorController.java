@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
@@ -34,8 +35,11 @@ public class InstructorController {
             BindingResult result) {
 
         if (result.hasErrors()) {
+            String errorMessage = !result.getFieldErrors().isEmpty()
+                    ? result.getFieldErrors().get(0).getDefaultMessage()
+                    : "Error de validación";
             return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.validationError(result));
+                    .body(ResponseWrapper.error(errorMessage, result));
         }
 
         try {
@@ -71,8 +75,11 @@ public class InstructorController {
             BindingResult result) {
 
         if (result.hasErrors()) {
+            String errorMessage = !result.getFieldErrors().isEmpty()
+                    ? result.getFieldErrors().get(0).getDefaultMessage()
+                    : "Error de validación";
             return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.validationError(result));
+                    .body(ResponseWrapper.error(errorMessage, result));
         }
 
         try {

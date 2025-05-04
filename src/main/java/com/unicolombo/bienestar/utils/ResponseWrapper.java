@@ -27,14 +27,13 @@ public class ResponseWrapper {
         return response;
     }
 
-    public static Map<String, Object> validationError(BindingResult result) {
+    public static Map<String, Object> error(String message, BindingResult result) {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "error");
-        response.put("message", "Error de validación");
+        response.put("message", message);
         response.put("timestamp", LocalDateTime.now());
 
-        // Estructura mejorada para el frontend
-        Map<String, Object> errorDetails = new HashMap<>();
+        Map<String, Object> validationDetails = new HashMap<>();
         List<Map<String, String>> fieldErrors = new ArrayList<>();
 
         for (FieldError error : result.getFieldErrors()) {
@@ -44,10 +43,18 @@ public class ResponseWrapper {
             fieldErrors.add(errorMap);
         }
 
-        errorDetails.put("count", result.getErrorCount());
-        errorDetails.put("errors", fieldErrors);
-        response.put("validation", errorDetails);
+        validationDetails.put("count", result.getErrorCount());
+        validationDetails.put("errors", fieldErrors);
+        response.put("validation", validationDetails);
 
         return response;
+    }
+
+    public static Map<String, Object> validationError(BindingResult result) {
+        String errorMessage = !result.getFieldErrors().isEmpty()
+                ? result.getFieldErrors().get(0).getDefaultMessage()
+                : "Error de validación";
+
+        return error(errorMessage, result);
     }
 }
