@@ -28,42 +28,37 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
-    /*
-    @Bean
-    public PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
-        PropertySourcesPlaceholderConfigurer configurer = new PropertySourcesPlaceholderConfigurer();
-        configurer.setLocation(new FileSystemResource("./application-secrets.properties"));
-        configurer.setIgnoreResourceNotFound(true);
-        return configurer;
-    }*/
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Habilitar CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-
+                        // Permitir Swagger y recursos públicos
                         .requestMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/webjars/**",
+                                "/swagger-ui/**",
                                 "/api/auth/**",
                                 "/api/estudiantes/registro"
                         ).permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/actividades/creadas").hasRole("ADMIN")
-                        .requestMatchers("/api/estudiantes/registro").permitAll()
+                        // Endpoints públicos
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/estudiantes/registro"
+                        ).permitAll()
 
-                        .requestMatchers("http://localhost:5173").permitAll()
-                        .requestMatchers("/api/auth/login-estudiante").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // Endpoints con roles específicos
+                        .requestMatchers(HttpMethod.GET, "/api/actividades/creadas").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**")
+                        .hasAnyRole("INSTRUCTOR", "ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/estudiantes/**").hasRole("ESTUDIANTE")
                         .requestMatchers("/api/actividades/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -71,6 +66,8 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
