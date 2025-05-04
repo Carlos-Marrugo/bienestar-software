@@ -2,10 +2,14 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.LoginEstudianteRequest;
 import com.unicolombo.bienestar.dto.LoginRequest;
+import com.unicolombo.bienestar.dto.ResetPasswordRequest;
+import com.unicolombo.bienestar.models.RefreshToken;
 import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.AuthService;
 import com.unicolombo.bienestar.services.JwtService;
+import com.unicolombo.bienestar.services.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,7 +17,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +37,12 @@ public class AuthController {
 
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Operation(
             summary = "Login para administradores e instructores",
@@ -123,4 +135,24 @@ public class AuthController {
             ));
         }
     }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            String email = jwtService.extractUsername(request.getToken());
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("No existe un usuario con ese correo"));
+
+            usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(Map.of("message", "Contraseña restablecida exitosamente"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Token inválido o expirado",
+                    "timestamp", System.currentTimeMillis()
+            ));
+        }
+    }
+
 }
