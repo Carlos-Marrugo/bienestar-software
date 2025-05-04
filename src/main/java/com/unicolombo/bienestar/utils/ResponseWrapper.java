@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.utils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,15 +27,27 @@ public class ResponseWrapper {
         return response;
     }
 
-    public static Map<String, Object> error(String message, BindingResult result) {
-        Map<String, Object> response = error(message);
-        Map<String, String> errors = new HashMap<>();
+    public static Map<String, Object> validationError(BindingResult result) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "error");
+        response.put("message", "Error de validación");
+        response.put("timestamp", LocalDateTime.now());
+
+        // Estructura mejorada para el frontend
+        Map<String, Object> errorDetails = new HashMap<>();
+        List<Map<String, String>> fieldErrors = new ArrayList<>();
 
         for (FieldError error : result.getFieldErrors()) {
-            errors.put(error.getField(), error.getDefaultMessage());
+            Map<String, String> errorMap = new HashMap<>();
+            errorMap.put("field", error.getField());
+            errorMap.put("message", error.getDefaultMessage());
+            fieldErrors.add(errorMap);
         }
 
-        response.put("errors", errors);
+        errorDetails.put("count", result.getErrorCount());
+        errorDetails.put("errors", fieldErrors);
+        response.put("validation", errorDetails);
+
         return response;
     }
 }

@@ -2,7 +2,6 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.InstructorUpdateDto;
 import com.unicolombo.bienestar.dto.RegistroInstructorDto;
-import com.unicolombo.bienestar.dto.InstructorUpdateDto;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.exceptions.BusinessException;
@@ -36,7 +35,7 @@ public class InstructorController {
 
         if (result.hasErrors()) {
             return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error("Error de validación", result));
+                    .body(ResponseWrapper.validationError(result));
         }
 
         try {
@@ -61,7 +60,8 @@ public class InstructorController {
         Optional<Instructor> instructor = instructorService.obtenerInstructorActivo(id);
         return instructor.map(value -> ResponseEntity.ok()
                         .body(ResponseWrapper.success(value, "Instructor encontrado")))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ResponseWrapper.error("Instructor no encontrado")));
     }
 
     @PutMapping("/{id}")
@@ -72,7 +72,7 @@ public class InstructorController {
 
         if (result.hasErrors()) {
             return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error("Error de validación", result));
+                    .body(ResponseWrapper.validationError(result));
         }
 
         try {
