@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -37,10 +38,13 @@ public class AuthController {
 
     @Autowired
     private JwtService jwtService;
+
     @Autowired
     private RefreshTokenService refreshTokenService;
+
     @Autowired
     private UsuarioRepository usuarioRepository;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -64,16 +68,21 @@ public class AuthController {
 
             String token = jwtService.generateToken(usuario);
 
-            return ResponseEntity.ok(Map.of(
-                    "token", token,
-                    "usuario", Map.of(
-                            "id", usuario.getId(),
-                            "email", usuario.getEmail(),
-                            "rol", usuario.getRol().name(),
-                            "nombre", usuario.getNombre(),
-                            "apellido", usuario.getApellido()
-                    )
+            // Crear un refresh token y guardarlo en la base de datos
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(usuario);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("refreshToken", refreshToken.getToken());
+            response.put("usuario", Map.of(
+                    "id", usuario.getId(),
+                    "email", usuario.getEmail(),
+                    "rol", usuario.getRol().name(),
+                    "nombre", usuario.getNombre(),
+                    "apellido", usuario.getApellido()
             ));
+
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", e.getMessage(),
@@ -101,18 +110,23 @@ public class AuthController {
 
             String token = jwtService.generateToken(usuario);
 
-            return ResponseEntity.ok(Map.of(
-                    "token", token,
-                    "usuario", Map.of(
-                            "id", usuario.getId(),
-                            "email", usuario.getEmail(),
-                            "rol", usuario.getRol().name(),
-                            "nombre", usuario.getNombre(),
-                            "apellido", usuario.getApellido(),
-                            "codigoEstudiantil", usuario.getEstudiante().getCodigoEstudiantil(),
-                            "horasAcumuladas", usuario.getEstudiante().getHorasAcumuladas()
-                    )
+            // Crear un refresh token y guardarlo en la base de datos
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(usuario);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("refreshToken", refreshToken.getToken());
+            response.put("usuario", Map.of(
+                    "id", usuario.getId(),
+                    "email", usuario.getEmail(),
+                    "rol", usuario.getRol().name(),
+                    "nombre", usuario.getNombre(),
+                    "apellido", usuario.getApellido(),
+                    "codigoEstudiantil", usuario.getEstudiante().getCodigoEstudiantil(),
+                    "horasAcumuladas", usuario.getEstudiante().getHorasAcumuladas()
             ));
+
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", e.getMessage(),
@@ -155,4 +169,36 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+        String requestToken = request.get("refreshToken");
+
+        if (requestToken == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Refresh token es requerido"));
+        }
+
+        return refreshTokenService.findByToken(requestToken)
+                .map(token -> {
+                    Usuario usuario = token.getUsuario();
+
+                    // Verificar si el token ha expirado
+                    if (refreshTokenService.isTokenExpired(token)) {
+                        refreshTokenService.deleteByUsuario(usuario);
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body(Map.of("error", "Refresh token expirado"));
+                    }
+
+                    // Generar un nuevo JWT
+                    String newJwt = jwtService.generateToken(usuario);
+
+                    Map<String, String> response = new HashMap<>();
+                    response.put("token", newJwt);
+                    response.put("refreshToken", token.getToken());
+
+                    return ResponseEntity.ok(response);
+                })
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "Token inválido")));
+    }
 }
