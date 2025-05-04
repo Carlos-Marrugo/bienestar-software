@@ -2,7 +2,6 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.InstructorUpdateDto;
 import com.unicolombo.bienestar.dto.RegistroInstructorDto;
-import com.unicolombo.bienestar.dto.InstructorUpdateDto;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.exceptions.BusinessException;
@@ -13,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
@@ -35,8 +35,11 @@ public class InstructorController {
             BindingResult result) {
 
         if (result.hasErrors()) {
+            String errorMessage = !result.getFieldErrors().isEmpty()
+                    ? result.getFieldErrors().get(0).getDefaultMessage()
+                    : "Error de validación";
             return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error("Error de validación", result));
+                    .body(ResponseWrapper.error(errorMessage, result));
         }
 
         try {
@@ -49,7 +52,7 @@ public class InstructorController {
         }
     }
 
-    @GetMapping
+    @GetMapping("/instructores-activos")
     public ResponseEntity<?> listarInstructores() {
         List<Instructor> instructores = instructorService.listarInstructoresActivos();
         return ResponseEntity.ok()
@@ -61,7 +64,8 @@ public class InstructorController {
         Optional<Instructor> instructor = instructorService.obtenerInstructorActivo(id);
         return instructor.map(value -> ResponseEntity.ok()
                         .body(ResponseWrapper.success(value, "Instructor encontrado")))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ResponseWrapper.error("Instructor no encontrado")));
     }
 
     @PutMapping("/{id}")
@@ -71,8 +75,11 @@ public class InstructorController {
             BindingResult result) {
 
         if (result.hasErrors()) {
+            String errorMessage = !result.getFieldErrors().isEmpty()
+                    ? result.getFieldErrors().get(0).getDefaultMessage()
+                    : "Error de validación";
             return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error("Error de validación", result));
+                    .body(ResponseWrapper.error(errorMessage, result));
         }
 
         try {

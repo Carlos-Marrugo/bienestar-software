@@ -17,6 +17,11 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
     @Query("SELECT a FROM Actividad a JOIN FETCH a.instructor i JOIN FETCH i.usuario WHERE LOWER(a.nombre) LIKE LOWER(concat('%', :filtro,'%'))")
     Page<Actividad> findByNombreContainingIgnoreCase(@Param("filtro") String filtro, Pageable pageable);
 
+
+
+    @Query("SELECT a FROM Actividad a JOIN FETCH a.instructor i WHERE i.id = :instructorId")
+    Page<Actividad> findByInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
+
     @Query("""
         SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
         FROM Actividad a
@@ -26,6 +31,10 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
             (a.horaInicio < :horaFin AND a.horaFin > :horaInicio)
         )
         """)
+
+    // En ActividadRepository
+
+
     boolean existsSolapamientoHorario(
             @Param("instructorId") Long instructorId,
             @Param("fecha") LocalDate fecha,
