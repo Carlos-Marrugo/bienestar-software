@@ -45,13 +45,11 @@ public class SecurityConfig {
                                 "/api/estudiantes/registro"
                         ).permitAll()
 
-                        // Endpoints públicos
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/estudiantes/registro"
                         ).permitAll()
 
-                        // Endpoints con roles específicos
                         .requestMatchers(HttpMethod.GET, "/api/actividades/creadas").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**")
                         .hasAnyRole("INSTRUCTOR", "ADMIN")

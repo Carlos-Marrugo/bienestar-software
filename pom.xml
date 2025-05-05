@@ -131,6 +131,28 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>5.13.0-M3</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.teketik/mock-in-bean -->
+		<dependency>
+			<groupId>com.teketik</groupId>
+			<artifactId>mock-in-bean</artifactId>
+			<version>boot2-v2.1-RC</version>
+		</dependency>
+
+		<!-- Database H2 -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
