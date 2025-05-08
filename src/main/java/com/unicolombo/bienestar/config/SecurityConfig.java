@@ -2,7 +2,6 @@ package com.unicolombo.bienestar.config;
 
 import com.unicolombo.bienestar.filters.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -36,18 +35,6 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @Value("${app.cors.allowed-origins}")
-    private String[] allowedOrigins;
-
-    @Value("${app.cors.allowed-methods}")
-    private String[] allowedMethods;
-
-    @Value("${app.cors.allowed-headers}")
-    private String[] allowedHeaders;
-
-    @Value("${app.cors.exposed-headers}")
-    private String[] exposedHeaders;
 
     @Autowired
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -106,10 +93,27 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
-        configuration.setAllowedMethods(Arrays.asList(allowedMethods));
-        configuration.setAllowedHeaders(Arrays.asList(allowedHeaders));
-        configuration.setExposedHeaders(Arrays.asList(exposedHeaders));
+
+        // URLs permitidas (actualiza estas con tus URLs reales)
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "http://192.168.18.20:5173",
+                "https://bienestar-software.onrender.com"
+        ));
+
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+        ));
+
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization", "Content-Type", "X-Requested-With", "Accept",
+                "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"
+        ));
+
+        configuration.setExposedHeaders(Arrays.asList(
+                "Authorization", "Content-Disposition", "Content-Type", "X-Requested-With"
+        ));
+
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L); // 1 hora de cache para preflight
 
