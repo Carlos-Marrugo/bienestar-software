@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.dto;
 
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,6 +28,17 @@ public class ActividadCreateDto {
     private LocalTime horaInicio;
 
     private LocalTime horaFin;
+
+    @AssertTrue(message = "La fecha de fin debe ser posterior a la fecha de inicio")
+    public boolean isFechaFinValid() {
+        return fechaFin == null || !fechaFin.isBefore(fechaInicio);
+    }
+
+    @AssertTrue(message = "La hora de fin debe ser posterior a la hora de inicio")
+    public boolean isHoraFinValid() {
+        if (horaFin == null || horaInicio == null) return true;
+        return !horaFin.isBefore(horaInicio);
+    }
 
     @NotNull(message = "El maximo de estudiantes es obligatorio")
     @Min(value = 1, message = "Debe tener al menos 1 estudiante")

@@ -1,10 +1,13 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "actividades")
@@ -37,10 +40,15 @@ public class Actividad {
     private Integer maxEstudiantes;
 
     @ManyToOne
-    @JoinColumn(name = "instructor_id", nullable = false)
-    private Usuario instructor;
+    @JsonIgnoreProperties("actividades")
+    @JoinColumn(name = "instructor_id", referencedColumnName = "id")
+    private Instructor instructor;
 
+    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("actividad")
+    private List<AuditoriaActividad> auditorias = new ArrayList<>();
 
+    
 
     public Long getId() {
         return id;
@@ -106,11 +114,11 @@ public class Actividad {
         this.maxEstudiantes = maxEstudiantes;
     }
 
-    public Usuario getInstructor() {
+    public Instructor getInstructor() {
         return instructor;
     }
 
-    public void setInstructor(Usuario instructor) {
+    public void setInstructor(Instructor instructor) {
         this.instructor = instructor;
     }
 }

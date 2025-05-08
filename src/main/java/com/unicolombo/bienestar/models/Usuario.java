@@ -31,6 +31,14 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private Role rol; // "ESTUDIANTE" o "ADMIN"
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean activo = true;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Estudiante estudiante;
+
+
+
 
     // --- UserDetails ---
     @Override
@@ -56,6 +64,9 @@ public class Usuario implements UserDetails {
 
     @Override
     public String getPassword() {
+        if (this.rol == Role.ESTUDIANTE && this.estudiante != null) {
+            return this.estudiante.getCodigoEstudiantil();
+        }
         return this.password;
     }
 
@@ -109,6 +120,23 @@ public class Usuario implements UserDetails {
         this.rol = rol;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
 
+    public boolean isActivo() {
+        return activo;
+    }
 
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
+
+    public Estudiante getEstudiante() {
+        return estudiante;
+    }
+
+    public void setEstudiante(Estudiante estudiante) {
+        this.estudiante = estudiante;
+    }
 }

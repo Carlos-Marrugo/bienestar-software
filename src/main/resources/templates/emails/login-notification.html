@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<h1>Inicio de sesión exitoso</h1>
+<p th:text="'Hola ' + ${name} + ','"></p>
+<p>Se ha detectado un inicio de sesión en tu cuenta <span th:text="${rol}"></span>.</p>
+<p>Fecha y hora: <span th:text="${fecha}"></span></p>
+<p>Si no fuiste tú, por favor cambia tu contraseña inmediatamente.</p>
+</body>
+</html>
