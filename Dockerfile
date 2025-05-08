@@ -1,6 +1,7 @@
 FROM eclipse-temurin:21-jdk-jammy as builder
 WORKDIR /workspace/app
 COPY . .
+RUN chmod +x mvnw  # Add this line
 RUN ./mvnw package -DskipTests
 
 FROM eclipse-temurin:21-jdk-jammy
