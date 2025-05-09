@@ -14,7 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post; // ✅ Importación correcta
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,7 +38,7 @@ class AuthControllerTest {
         when(jwtService.generateToken(any(Usuario.class)))
                 .thenReturn("fake-jwt-token");
 
-        mockMvc.perform(post("/api/auth/login") // ✅ Ahora funciona
+        mockMvc.perform(post("/api/auth/login") 
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                     {
