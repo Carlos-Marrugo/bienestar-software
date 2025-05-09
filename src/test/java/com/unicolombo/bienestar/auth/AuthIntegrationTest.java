@@ -29,10 +29,10 @@ class AuthIntegrationTest {
 
     @BeforeAll
     void setup() {
-        // Prepara datos iniciales en H2
+        
         Usuario admin = new Usuario();
         admin.setEmail("admin@unicolombo.edu.co");
-        admin.setPassword("$2a$10$encoded"); // Password ya encriptado
+        admin.setPassword("$2a$10$encoded"); 
         usuarioRepository.save(admin);
     }
 
