@@ -55,6 +55,7 @@ public class AuthController {
                     @ApiResponse(responseCode = "400", description = "Credenciales inválidas")
             }
     )
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -65,7 +66,13 @@ public class AuthController {
             String token = jwtService.generateToken(usuario);
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(usuario);
 
-            return ResponseEntity.ok(buildTokenResponse(token, refreshToken.getToken(), usuario));
+            Map<String, Object> response = buildTokenResponse(token, refreshToken.getToken(), usuario);
+
+            if (usuario.getRol() == Role.ESTUDIANTE && usuario.getEstudiante() != null) {
+                response.put("estudianteId", usuario.getEstudiante().getId());
+            }
+
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", e.getMessage(),

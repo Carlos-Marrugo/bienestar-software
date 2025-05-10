@@ -1,9 +1,6 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.dto.estudiante.ActualizarEstudianteDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudianteDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudiantePerfilDto;
-import com.unicolombo.bienestar.dto.estudiante.RegistroEstudianteDto;
+import com.unicolombo.bienestar.dto.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
@@ -13,9 +10,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 
+import static com.unicolombo.bienestar.models.EstadoEstudiante.INACTIVO;
+import static com.unicolombo.bienestar.models.EstadoEstudiante.SUSPENDIDO;
 
 
 @Service
@@ -27,6 +28,9 @@ public class EstudianteService {
     private final EstudianteRepository estudianteRepo;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final SuspencionRepository suspensionRepo;
+    private final AuditoriaService auditoriaService;
+
 
     @Transactional
     public Estudiante registrarEstudiante(RegistroEstudianteDto dto) {
@@ -66,7 +70,6 @@ public class EstudianteService {
         return mapToPerfilDto(estudiante);
     }
 
-    //lista por estado activo o inactivo
     public Page<EstudianteDto> listarPorEstado(EstadoEstudiante estado, Pageable pageable, String filtro) {
         if (filtro != null && !filtro.isEmpty()) {
             return estudianteRepo.findByEstadoAndFiltro(estado, filtro, pageable)
@@ -76,13 +79,49 @@ public class EstudianteService {
                 .map(this::convertToDto);
     }
 
-    public Estudiante cambiarEstado(Long id, EstadoEstudiante nuevoEstado) {
+    @Transactional
+    public void cambiarEstado(Long id, CambiarEstadoDto dto, Usuario administrador) {
+        if (dto == null || dto.getEstado() == null || dto.getMotivo() == null) {
+            throw new BusinessException("Datos de cambio de estado inválidos");
+        }
+
         Estudiante estudiante = estudianteRepo.findById(id)
                 .orElseThrow(() -> new BusinessException("Estudiante no encontrado"));
 
-        estudiante.setEstado(nuevoEstado);
-        return estudianteRepo.save(estudiante);
+        if (estudiante.getEstado().equals(dto.getEstado())) {
+            throw new BusinessException("El estudiante ya está en estado " + dto.getEstado());
+        }
+
+        if (dto.getEstado().equals(EstadoEstudiante.SUSPENDIDO)) {
+            Suspension suspension = new Suspension();
+            suspension.setEstudiante(estudiante);
+            suspension.setAdministrador(administrador);
+            suspension.setMotivo(dto.getMotivo());
+            suspension.setFecha(LocalDateTime.now());
+
+            if (dto.getFechaFin() != null) {
+                suspension.setFechaFin(dto.getFechaFin());
+            }
+
+            suspensionRepo.save(suspension);
+        }
+
+        String accion = "Cambio de estado a " + dto.getEstado();
+        String detalles = String.format(
+                "Estudiante ID: %d | Motivo: %s | Admin: %s",
+                id,
+                dto.getMotivo(),
+                administrador.getEmail()
+        );
+
+        auditoriaService.registrarAccion(administrador, accion, detalles);
+
+        estudiante.setEstado(dto.getEstado());
+        estudianteRepo.save(estudiante);
     }
+
+
+
 
 
     private EstudiantePerfilDto mapToPerfilDto(Estudiante estudiante) {
@@ -131,7 +170,7 @@ public class EstudianteService {
         Estudiante estudiante = estudianteRepo.findById(id)
                 .orElseThrow(() -> new BusinessException("Estudiante no encontrado"));
 
-        estudiante.setEstado(EstadoEstudiante.INACTIVO);
+        estudiante.setEstado(INACTIVO);
         estudianteRepo.save(estudiante);
     }
 

@@ -1,4 +1,3 @@
-// ActividadResumenDto.java
 package com.unicolombo.bienestar.dto.Actividad;
 
 import lombok.Data;
