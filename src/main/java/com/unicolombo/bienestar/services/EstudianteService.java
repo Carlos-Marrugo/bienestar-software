@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.estudiante.ActualizarEstudianteDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteDto;
 import com.unicolombo.bienestar.dto.estudiante.EstudiantePerfilDto;
 import com.unicolombo.bienestar.dto.estudiante.RegistroEstudianteDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class EstudianteService {
 
     private final UsuarioRepository usuarioRepo;
@@ -51,6 +53,8 @@ public class EstudianteService {
         estudiante.setCodigoEstudiantil(dto.getCodigoEstudiantil());
         estudiante.setProgramaAcademico(dto.getProgramaAcademico());
         estudiante.setSemestre(dto.getSemestre());
+        estudiante.setEstado(EstadoEstudiante.ACTIVO);
+        estudiante.setHorasAcumuladas(0);
 
         return estudianteRepo.save(estudiante);
     }
@@ -61,6 +65,25 @@ public class EstudianteService {
 
         return mapToPerfilDto(estudiante);
     }
+
+    //lista por estado activo o inactivo
+    public Page<EstudianteDto> listarPorEstado(EstadoEstudiante estado, Pageable pageable, String filtro) {
+        if (filtro != null && !filtro.isEmpty()) {
+            return estudianteRepo.findByEstadoAndFiltro(estado, filtro, pageable)
+                    .map(this::convertToDto);
+        }
+        return estudianteRepo.findByEstado(estado, pageable)
+                .map(this::convertToDto);
+    }
+
+    public Estudiante cambiarEstado(Long id, EstadoEstudiante nuevoEstado) {
+        Estudiante estudiante = estudianteRepo.findById(id)
+                .orElseThrow(() -> new BusinessException("Estudiante no encontrado"));
+
+        estudiante.setEstado(nuevoEstado);
+        return estudianteRepo.save(estudiante);
+    }
+
 
     private EstudiantePerfilDto mapToPerfilDto(Estudiante estudiante) {
         EstudiantePerfilDto dto = new EstudiantePerfilDto();
@@ -119,5 +142,16 @@ public class EstudianteService {
         if (!email.endsWith("@unicolombo.edu.co")) {
             throw new BusinessException("Solo se permiten correos institucionales (@unicolombo.edu.co)");
         }
+    }
+
+    private EstudianteDto convertToDto(Estudiante estudiante) {
+        EstudianteDto dto = new EstudianteDto();
+        dto.setId(estudiante.getId());
+        dto.setNombreCompleto(estudiante.getNombreCompleto());
+        dto.setCodigoEstudiantil(estudiante.getCodigoEstudiantil());
+        dto.setProgramaAcademico(estudiante.getProgramaAcademico());
+        dto.setSemestre(estudiante.getSemestre());
+        dto.setEstado(estudiante.getEstado());
+        return dto;
     }
 }

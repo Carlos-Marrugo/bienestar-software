@@ -1,11 +1,9 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.*;
-import com.unicolombo.bienestar.dto.estudiante.ActualizarEstudianteDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudiantePerfilDto;
-import com.unicolombo.bienestar.dto.estudiante.HorasActividadDto;
-import com.unicolombo.bienestar.dto.estudiante.RegistroEstudianteDto;
+import com.unicolombo.bienestar.dto.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.models.EstadoEstudiante;
 import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
@@ -40,6 +38,8 @@ public class EstudianteController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+
 
     @Autowired
     private JwtService jwtService;
@@ -121,6 +121,27 @@ public class EstudianteController {
                 )
         ));
     }
+
+    //listado de estudiantes por estado
+    @GetMapping("/estado/{estado}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> listarPorEstado(
+            @PathVariable EstadoEstudiante estado,
+            Pageable pageable,
+            @RequestParam(required = false) String filtro) {
+
+        Page<EstudianteDto> estudiantes = estudianteService.listarPorEstado(estado, pageable, filtro);
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", estudiantes.getContent(),
+                "meta", Map.of(
+                        "total", estudiantes.getTotalElements(),
+                        "page", estudiantes.getNumber(),
+                        "size", estudiantes.getSize()
+                )
+        ));
+    }
+
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar estudiante (Admin)")

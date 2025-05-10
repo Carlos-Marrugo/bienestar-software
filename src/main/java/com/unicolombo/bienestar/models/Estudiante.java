@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Data;
 import java.util.List;
 
