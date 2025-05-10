@@ -157,4 +157,15 @@ public class EstudianteController {
                 "message", "Estudiante actualizado"
         ));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> eliminarEstudiante(@PathVariable Long id) {
+        estudianteService.eliminarEstudiante(id);
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Se ha cambiado este estudiante a INACTIVO"
+        ));
+    }
+
 }

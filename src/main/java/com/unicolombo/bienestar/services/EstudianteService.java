@@ -124,6 +124,17 @@ public class EstudianteService {
         return estudianteRepo.findAll(pageable);
     }
 
+
+    //eliminar estudiante
+    @Transactional
+    public void eliminarEstudiante(Long id) {
+        Estudiante estudiante = estudianteRepo.findById(id)
+                .orElseThrow(() -> new BusinessException("Estudiante no encontrado"));
+
+        estudiante.setEstado(EstadoEstudiante.INACTIVO);
+        estudianteRepo.save(estudiante);
+    }
+
     private EstudiantePerfilDto mapToPerfilDto(Estudiante estudiante, List<Inscripcion> inscripciones) {
         EstudiantePerfilDto dto = new EstudiantePerfilDto();
         dto.setId(estudiante.getId());
