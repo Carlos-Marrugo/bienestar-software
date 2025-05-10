@@ -37,23 +37,25 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Endpoints públicos
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/api/auth/**",
-                                "/api/estudiantes/registro"
+                                "/api/auth/**"
                         ).permitAll()
 
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/estudiantes/registro"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/estudiantes/registro").permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/actividades/creadas").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                        // Endpoints de ADMIN
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/estudiantes/**").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.POST, "/api/estudiantes").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/estudiantes").hasRole("ADMIN")
                         .requestMatchers("/api/actividades/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+
+                        .requestMatchers("/api/estudiantes/mi-perfil").hasRole("ESTUDIANTE")
+                        .requestMatchers("/api/estudiantes/mi-horas-actividades").hasRole("ESTUDIANTE")
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 

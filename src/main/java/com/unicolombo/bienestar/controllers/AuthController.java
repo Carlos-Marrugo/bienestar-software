@@ -85,36 +85,19 @@ public class AuthController {
     )
     @PostMapping("/login-estudiante")
     public ResponseEntity<?> loginEstudiante(@Valid @RequestBody LoginEstudianteRequest request) {
-        try {
-            Usuario usuario = authService.authenticate(
-                    request.getEmail(),
-                    request.getCodigoEstudiantil()
-            );
+        Usuario usuario = authService.authenticateEstudiante(
+                request.getEmail(),
+                request.getCodigoEstudiantil());
 
-            String token = jwtService.generateToken(usuario);
+        String jwt = jwtService.generateToken(usuario);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(usuario);
 
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(usuario);
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", jwt);
+        response.put("refreshToken", refreshToken.getToken());
+        response.put("estudianteId", usuario.getEstudiante().getId());
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("token", token);
-            response.put("refreshToken", refreshToken.getToken());
-            response.put("usuario", Map.of(
-                    "id", usuario.getId(),
-                    "email", usuario.getEmail(),
-                    "rol", usuario.getRol().name(),
-                    "nombre", usuario.getNombre(),
-                    "apellido", usuario.getApellido(),
-                    "codigoEstudiantil", usuario.getEstudiante().getCodigoEstudiantil(),
-                    "horasAcumuladas", usuario.getEstudiante().getHorasAcumuladas()
-            ));
-
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", e.getMessage(),
-                    "timestamp", System.currentTimeMillis()
-            ));
-        }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/forgot-password")

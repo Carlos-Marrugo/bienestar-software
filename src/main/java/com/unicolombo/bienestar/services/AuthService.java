@@ -41,7 +41,6 @@ public class AuthService {
                     throw new RuntimeException("Código estudiantil incorrecto");
                 }
 
-                //email si el inicio es correcto
                 emailService.sendLoginNotification(
                         usuario.getEmail(),
                         usuario.getNombre(),
@@ -61,6 +60,18 @@ public class AuthService {
                         usuario.getRol().name()
                 );
                 break;
+        }
+
+        return usuario;
+    }
+
+    public Usuario authenticateEstudiante(String email, String codigoEstudiantil) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+
+        if (usuario.getEstudiante() == null ||
+                !usuario.getEstudiante().getCodigoEstudiantil().equals(codigoEstudiantil)) {
+            throw new RuntimeException("Código estudiantil incorrecto");
         }
 
         return usuario;

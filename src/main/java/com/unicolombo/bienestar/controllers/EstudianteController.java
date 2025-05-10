@@ -1,67 +1,139 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.RegistroEstudianteDto;
+import com.unicolombo.bienestar.dto.*;
+import com.unicolombo.bienestar.dto.estudiante.ActualizarEstudianteDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudiantePerfilDto;
+import com.unicolombo.bienestar.dto.estudiante.HorasActividadDto;
+import com.unicolombo.bienestar.dto.estudiante.RegistroEstudianteDto;
+import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Estudiante;
+import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.EstudianteService;
+import com.unicolombo.bienestar.services.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/estudiantes")
-@Tag(name = "2. Estudiantes", description = "Gestión de estudiantes y sus registros")
+@RequiredArgsConstructor
+@Tag(name = "Estudiantes", description = "Gestión de estudiantes")
+@SecurityRequirement(name = "bearerAuth")
 public class EstudianteController {
 
     @Autowired
     private EstudianteService estudianteService;
 
-    @Operation(
-            summary = "Registrar un nuevo estudiante",
-            description = "Crea un nuevo estudiante en el sistema"
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Estudiante creado exitosamente",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = Map.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Datos inválidos o estudiante ya existente",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = Map.class)
-                    )
-            )
-    })
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-    @PostMapping("/registro")
-    public ResponseEntity<Map<String, Object>> registrarEstudiante(
-            @RequestBody RegistroEstudianteDto dto) {
+    @Autowired
+    private JwtService jwtService;
 
+    @PostMapping
+    @Operation(summary = "Registrar nuevo estudiante")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> registrarEstudiante(
+            @Valid @RequestBody RegistroEstudianteDto dto,
+            @RequestHeader("Authorization") String authHeader,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String token = authHeader.substring(7);
+        if (!jwtService.isTokenValid(token, userDetails)) {
+            throw new BusinessException("Token inválido o expirado");
+        }
 
         Estudiante estudiante = estudianteService.registrarEstudiante(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "success", true,
-                "message", "Estudiante registrado exitosamente",
-                "data", Map.of(
-                        "usuario_id", estudiante.getUsuario().getId(),
-                        "estudiante_id", estudiante.getId(),
-                        "codigo", estudiante.getCodigoEstudiantil(),
-                        "email", estudiante.getUsuario().getEmail()
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", estudiante,
+                "message", "Estudiante registrado exitosamente"
+        ));
+    }
+
+
+    @GetMapping("/{id}/perfil")
+    @Operation(summary = "Obtener perfil completo")
+    @PreAuthorize("hasAnyRole('ESTUDIANTE', 'ADMIN')")
+    public ResponseEntity<?> obtenerPerfil(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ESTUDIANTE"))) {
+
+            Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+            if (!usuario.getEstudiante().getId().equals(id)) {
+                throw new BusinessException("No autorizado para ver este perfil");
+            }
+        }
+
+        EstudiantePerfilDto perfil = estudianteService.obtenerPerfilCompleto(id);
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", perfil
+        ));
+    }
+
+    /*@GetMapping("/{id}/horas-actividades")
+    @Operation(summary = "Obtener horas por actividad")
+    @PreAuthorize("hasAnyRole('ESTUDIANTE', 'ADMIN', 'INSTRUCTOR')")
+    public ResponseEntity<?> obtenerHorasActividades(@PathVariable Long id) {
+        List<HorasActividadDto> horas = estudianteService.obtenerHorasPorActividad(id);
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", horas,
+                "meta", Map.of("total", horas.size())
+        ));
+    }*/
+
+    @GetMapping
+    @Operation(summary = "Listar todos los estudiantes (Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> listarEstudiantes(
+            Pageable pageable,
+            @RequestParam(required = false) String filtro) {
+
+        Page<Estudiante> estudiantes = estudianteService.listarEstudiantes(pageable, filtro);
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", estudiantes.getContent(),
+                "meta", Map.of(
+                        "total", estudiantes.getTotalElements(),
+                        "page", estudiantes.getNumber(),
+                        "size", estudiantes.getSize()
                 )
+        ));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Actualizar estudiante (Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> actualizarEstudiante(
+            @PathVariable Long id,
+            @Valid @RequestBody ActualizarEstudianteDto dto) {
+
+        Estudiante estudiante = estudianteService.actualizarEstudiante(id, dto);
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", estudiante,
+                "message", "Estudiante actualizado"
         ));
     }
 }
