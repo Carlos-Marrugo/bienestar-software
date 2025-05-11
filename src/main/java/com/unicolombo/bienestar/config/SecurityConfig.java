@@ -37,27 +37,27 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir Swagger y recursos públicos
+                        // Endpoints públicos
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/api/auth/**",
-                                "/api/estudiantes/registro"
+                                "/api/auth/**"
                         ).permitAll()
 
-                        // Endpoints públicos
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/estudiantes/registro"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/estudiantes/registro").permitAll()
 
-                        // Endpoints con roles específicos
-                        .requestMatchers(HttpMethod.GET, "/api/actividades/creadas").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**")
-                        .hasAnyRole("INSTRUCTOR", "ADMIN")
+                        // Endpoints de ADMIN
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/estudiantes/**").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.POST, "/api/estudiantes").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/estudiantes").hasRole("ADMIN")
                         .requestMatchers("/api/actividades/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+
+                        .requestMatchers("/api/estudiantes/mi-perfil").hasRole("ESTUDIANTE")
+                        .requestMatchers("/api/estudiantes/mi-horas-actividades").hasRole("ESTUDIANTE")
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
@@ -84,7 +84,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
-                "http://192.168.18.20:5173"
+                "https://bienestar-front.onrender.com"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
@@ -93,5 +93,21 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "https://bienestar-front.onrender.com"
+        ));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return new CorsFilter(source);
     }
 }

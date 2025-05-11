@@ -17,8 +17,11 @@ public class AuditoriaActividad {
     private TipoAccion accion;
 
     @ManyToOne
+    @JoinColumn(name = "actividad_id", nullable = true) // Permite null
     private Actividad actividad;
+
     @ManyToOne
+    @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
     private LocalDateTime fecha;

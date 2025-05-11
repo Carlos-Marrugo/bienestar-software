@@ -17,27 +17,26 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
     @Query("SELECT a FROM Actividad a JOIN FETCH a.instructor i JOIN FETCH i.usuario WHERE LOWER(a.nombre) LIKE LOWER(concat('%', :filtro,'%'))")
     Page<Actividad> findByNombreContainingIgnoreCase(@Param("filtro") String filtro, Pageable pageable);
 
-
-
     @Query("SELECT a FROM Actividad a JOIN FETCH a.instructor i WHERE i.id = :instructorId")
     Page<Actividad> findByInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
 
-    @Query("""
-        SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
-        FROM Actividad a
-        WHERE a.instructor.id = :instructorId
-        AND a.fechaInicio = :fecha
-        AND (
-            (a.horaInicio < :horaFin AND a.horaFin > :horaInicio)
-        )
-        """)
-
-    // En ActividadRepository
-
-
-    boolean existsSolapamientoHorario(
+    @Query("SELECT COUNT(a) > 0 FROM Actividad a WHERE " +
+            "a.instructor.id = :instructorId AND " +
+            "a.fechaInicio = :fecha AND " +
+            "((a.horaInicio < :horaFin AND a.horaFin > :horaInicio) OR " +
+            "(a.horaInicio = :horaInicio AND a.horaFin = :horaFin)) AND " +
+            "a.id != :actividadIdExcluir")
+    boolean existsSolapamientoHorarioExcluyendoActividad(
             @Param("instructorId") Long instructorId,
             @Param("fecha") LocalDate fecha,
             @Param("horaInicio") LocalTime horaInicio,
-            @Param("horaFin") LocalTime horaFin);
+            @Param("horaFin") LocalTime horaFin,
+            @Param("actividadIdExcluir") Long actividadIdExcluir);
+
+    boolean existsByInstructorIdAndFechaInicioAndHoraInicioLessThanAndHoraFinGreaterThanAndIdNot(
+            Long instructorId,
+            LocalDate fechaInicio,
+            LocalTime horaFin,
+            LocalTime horaInicio,
+            Long idNot);
 }

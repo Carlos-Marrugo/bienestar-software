@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,18 +30,16 @@ public class Usuario implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role rol; // "ESTUDIANTE" o "ADMIN"
+    private Role rol;
 
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean activo = true;
 
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Estudiante estudiante;
 
 
-
-
-    // --- UserDetails ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + rol));

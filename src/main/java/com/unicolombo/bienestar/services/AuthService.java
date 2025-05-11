@@ -40,13 +40,6 @@ public class AuthService {
                         !usuario.getEstudiante().getCodigoEstudiantil().equals(credencial)) {
                     throw new RuntimeException("Código estudiantil incorrecto");
                 }
-
-                //email si el inicio es correcto
-                emailService.sendLoginNotification(
-                        usuario.getEmail(),
-                        usuario.getNombre(),
-                        "Estudiante"
-                );
                 break;
 
             case ADMIN:
@@ -54,13 +47,25 @@ public class AuthService {
                 if (!passwordEncoder.matches(credencial, usuario.getPassword())) {
                     throw new RuntimeException("Contraseña incorrecta");
                 }
-
-                emailService.sendLoginNotification(
-                        usuario.getEmail(),
-                        usuario.getNombre(),
-                        usuario.getRol().name()
-                );
                 break;
+        }
+
+        emailService.sendLoginNotification(
+                usuario.getEmail(),
+                usuario.getNombre(),
+                usuario.getRol().name()
+        );
+
+        return usuario;
+    }
+
+    public Usuario authenticateEstudiante(String email, String codigoEstudiantil) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+
+        if (usuario.getEstudiante() == null ||
+                !usuario.getEstudiante().getCodigoEstudiantil().equals(codigoEstudiantil)) {
+            throw new RuntimeException("Código estudiantil incorrecto");
         }
 
         return usuario;
