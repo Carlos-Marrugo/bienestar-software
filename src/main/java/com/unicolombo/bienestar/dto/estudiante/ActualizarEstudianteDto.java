@@ -6,6 +6,11 @@ import lombok.Data;
 
 @Data
 public class ActualizarEstudianteDto {
+    @Size(max = 100)
+    private String nombre;
+
+    @Size(max = 100)
+    private String apellido;
 
     @NotBlank
     @Size(max = 100)
@@ -16,4 +21,6 @@ public class ActualizarEstudianteDto {
 
     @NotNull
     private EstadoEstudiante estado;
+
+
 }

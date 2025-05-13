@@ -17,7 +17,7 @@ public class RegistroEstudianteDto {
     @NotBlank @Size(max = 100)
     private String apellido;
 
-    @Pattern(regexp = "^\\d{10}$", message = "El código estudiantil debe tener 10 dígitos")
+    @Pattern(regexp = "^\\d{8,10}$", message = "El código estudiantil debe tener entre 8 y 10 dígitos")
     private String codigoEstudiantil;
 
     @NotBlank @Size(max = 100)

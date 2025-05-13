@@ -8,6 +8,7 @@ import com.unicolombo.bienestar.repositories.InstructorRepository;
 import com.unicolombo.bienestar.repositories.UbicacionRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,29 +44,13 @@ public class ActividadService {
     private UbicacionRepository ubicacionRepository;
 
     public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro) {
-        if (page < 0) throw new IllegalArgumentException("El número de página no puede ser negativo");
-        if (size <= 0 || size > 100) throw new IllegalArgumentException("El tamaño de página debe estar entre 1 y 100");
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-
-        Page<Actividad> actividades;
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").descending());
 
         if (filtro != null && !filtro.isEmpty()) {
-            if (!filtro.matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]+$")) {
-                throw new IllegalArgumentException("Filtro contiene caracteres no permitidos");
-            }
-            actividades = actividadRepository.findByNombreContainingIgnoreCase(filtro, pageable);
-        } else {
-            actividades = actividadRepository.findAll(pageable);
+            return actividadRepository.findByNombreContainingIgnoreCase(filtro, pageable);
         }
 
-        actividades.getContent().forEach(act -> {
-            if (act.getInstructor() == null || act.getInstructor().getUsuario() == null) {
-                log.warn("Actividad con ID {} tiene instructor o usuario nulo", act.getId());
-            }
-        });
-
-        return actividades;
+        return actividadRepository.findAll(pageable);
     }
 
 
@@ -74,17 +59,32 @@ public class ActividadService {
         return actividadRepository.findByInstructorId(instructorId, pageable);
     }
 
+
+    @CacheEvict(value = {"actividades", "ubicaciones"}, allEntries = true)
     @Transactional
     public Actividad crearActividad(ActividadCreateDto dto, String emailUsuario) {
+        // Validaciones básicas
+        if (dto.getMaxEstudiantes() < 5) {
+            throw new BusinessException("La capacidad mínima es de 5 estudiantes");
+        }
+
+        if (dto.getFechaInicio().isBefore(LocalDate.now())) {
+            throw new BusinessException("La fecha de inicio no puede ser en el pasado");
+        }
+
+        if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
+            throw new BusinessException("La fecha de fin debe ser posterior a la fecha de inicio");
+        }
+
+        // Obtener y validar ubicación
         Ubicacion ubicacion = ubicacionRepository.findById(dto.getUbicacionId())
                 .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
 
-        if (!dto.getFechaInicio().getDayOfWeek().equals(dto.getDia())) {
+        if (!dto.getFechaInicio().getDayOfWeek().equals(dto.getDia().getDayOfWeek())) {
             throw new BusinessException("La fecha no coincide con el día de la semana especificado");
         }
 
-        validarSolapamiento(dto, null);
-
+        // Validar disponibilidad
         ubicacionService.validarDisponibilidad(
                 dto.getUbicacionId(),
                 dto.getFechaInicio(),
@@ -92,41 +92,21 @@ public class ActividadService {
                 dto.getHoraFin()
         );
 
+        // Obtener y validar instructor
         Instructor instructor = instructorRepository.findById(dto.getInstructorId())
-                .orElseThrow(() -> {
-                    log.error("Instructor no encontrado con ID: {}", dto.getInstructorId());
-                    return new BusinessException("Instructor no encontrado");
-                });
+                .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
 
-        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
-                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
-
-
-        if (instructor.getUsuario().getRol() != Role.INSTRUCTOR) {
-            log.warn("Usuario con ID {} no es instructor", dto.getInstructorId());
-            throw new BusinessException("El usuario no tiene rol de instructor");
+        if (!instructor.getUsuario().isActivo()) {
+            throw new BusinessException("El instructor está inactivo");
         }
 
-        if (dto.getMaxEstudiantes() < 5) {
-            throw new BusinessException("La capacidad mínima es de 5 estudiantes");
-        }
+        // Validar solapamiento
+        validarSolapamiento(dto, null);
 
-        if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
-            throw new BusinessException("La fecha de fin no puede ser anterior a la fecha de inicio");
-        }
-
-        if (dto.getHoraFin() != null && dto.getHoraFin().isBefore(dto.getHoraInicio())) {
-            throw new BusinessException("La hora de fin no puede ser anterior a la hora de inicio");
-        }
-
-        if (existeSolapamientoHorario(dto.getInstructorId(), dto.getFechaInicio(),
-                dto.getHoraInicio(), dto.getHoraFin(), dto.getInstructorId())) {
-            throw new BusinessException("El instructor ya tiene una actividad programada en ese horario");
-        }
-
+        // Crear actividad
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
-        actividad.setUbicacion(ubicacion);
+        actividad.setUbicacion(ubicacion); // Establecer la ubicación
         actividad.setFechaInicio(dto.getFechaInicio());
         actividad.setFechaFin(dto.getFechaFin());
         actividad.setHoraInicio(dto.getHoraInicio());
@@ -134,14 +114,14 @@ public class ActividadService {
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
         actividad.setInstructor(instructor);
 
-        log.info("Guardando nueva actividad: {}", actividad.getNombre());
-
+        // Auditoría
         auditoriaService.registrarAccion(
-                usuario.getEmail(),
+                emailUsuario,
                 TipoAccion.CREACION,
                 "Actividad creada: " + actividad.getNombre(),
                 actividad.getId()
         );
+
         return actividadRepository.save(actividad);
     }
 

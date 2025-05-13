@@ -14,7 +14,12 @@ import java.time.LocalTime;
 
 @Repository
 public interface ActividadRepository extends JpaRepository<Actividad, Long> {
-    @Query("SELECT a FROM Actividad a JOIN FETCH a.instructor i JOIN FETCH i.usuario WHERE LOWER(a.nombre) LIKE LOWER(concat('%', :filtro,'%'))")
+    // En ActividadRepository, reemplaza con:
+    @Query("SELECT a FROM Actividad a " +
+            "LEFT JOIN FETCH a.ubicacion " +
+            "LEFT JOIN FETCH a.instructor i " +
+            "LEFT JOIN FETCH i.usuario " +
+            "WHERE LOWER(a.nombre) LIKE LOWER(concat('%', :filtro,'%'))")
     Page<Actividad> findByNombreContainingIgnoreCase(@Param("filtro") String filtro, Pageable pageable);
 
     @Query("SELECT a FROM Actividad a JOIN FETCH a.instructor i WHERE i.id = :instructorId")

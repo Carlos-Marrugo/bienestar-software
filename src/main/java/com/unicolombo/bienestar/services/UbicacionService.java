@@ -2,12 +2,12 @@ package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.Actividad.UbicacionDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
-import com.unicolombo.bienestar.models.HorarioUbicacion;
-import com.unicolombo.bienestar.models.TipoAccion;
-import com.unicolombo.bienestar.models.Ubicacion;
+import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.UbicacionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +25,7 @@ public class UbicacionService {
     private final AuditoriaService auditoriaService;
 
     @Transactional
+    @CacheEvict(value = {"ubicaciones", "ubicacionesActivas"}, allEntries = true)
     public Ubicacion crearUbicacion(UbicacionDto dto, String emailAdmin) {
         if (ubicacionRepository.existsByNombre(dto.getNombre())) {
             throw new BusinessException("Ya existe una ubicación con ese nombre");
@@ -33,7 +35,6 @@ public class UbicacionService {
         ubicacion.setNombre(dto.getNombre());
         ubicacion.setCapacidad(dto.getCapacidad());
 
-        // guardar horarios
         dto.getHorarios().forEach(horarioDto -> {
             HorarioUbicacion horario = new HorarioUbicacion();
             horario.setDia(horarioDto.getDia());
@@ -52,6 +53,7 @@ public class UbicacionService {
         return ubicacionRepository.save(ubicacion);
     }
 
+    @Cacheable(value = "ubicacionesActivas")
     public List<Ubicacion> listarUbicacionesActivas() {
         return ubicacionRepository.findAllActivas();
     }
@@ -62,56 +64,21 @@ public class UbicacionService {
             LocalTime horaInicio,
             LocalTime horaFin
     ) {
-        Ubicacion ubicacion = ubicacionRepository.findByIdAndActivaTrue(ubicacionId)
-                .orElseThrow(() -> new BusinessException("Ubicación no disponible o inactiva"));
+        Ubicacion ubicacion = obtenerUbicacionConHorarios(ubicacionId);
+        DayOfWeek diaSemana = fecha.getDayOfWeek();
+
+        validarDiaYHorario(ubicacion, diaSemana, horaInicio, horaFin);
 
         if (ubicacionRepository.estaOcupada(ubicacionId, fecha, horaInicio, horaFin)) {
             throw new BusinessException("La ubicación ya está reservada en ese horario");
-        }
-
-        DayOfWeek diaActividad = fecha.getDayOfWeek();
-        boolean diaValido = ubicacion.getHorarios().stream()
-                .anyMatch(horario -> horario.getDia().name().equals(diaActividad.name()));
-
-        if (!diaValido) {
-            throw new BusinessException("La ubicación no opera el " + diaActividad);
-        }
-
-        boolean horarioValido = ubicacion.getHorarios().stream()
-                .filter(horario -> horario.getDia().name().equals(diaActividad.name()))
-                .anyMatch(horario ->
-                        !horaInicio.isBefore(horario.getHoraInicio()) &&
-                                !horaFin.isAfter(horario.getHoraFin())
-                );
-
-        if (!horarioValido) {
-            throw new BusinessException("El horario no está dentro del rango permitido");
         }
 
         return true;
     }
 
     public boolean verificarDisponibilidad(Long ubicacionId, DayOfWeek dia, LocalTime horaInicio, LocalTime horaFin) {
-        Ubicacion ubicacion = ubicacionRepository.findByIdAndActivaTrue(ubicacionId)
-                .orElseThrow(() -> new BusinessException("Ubicación no disponible o inactiva"));
-
-        boolean diaValido = ubicacion.getHorarios().stream()
-                .anyMatch(horario -> horario.getDia().name().equals(dia.name()));
-
-        if (!diaValido) {
-            throw new BusinessException("La ubicación no opera el " + dia);
-        }
-
-        boolean horarioValido = ubicacion.getHorarios().stream()
-                .filter(horario -> horario.getDia().name().equals(dia.name()))
-                .anyMatch(horario ->
-                        !horaInicio.isBefore(horario.getHoraInicio()) &&
-                                !horaFin.isAfter(horario.getHoraFin())
-                );
-
-        if (!horarioValido) {
-            throw new BusinessException("El horario no está dentro del rango permitido");
-        }
+        Ubicacion ubicacion = obtenerUbicacionConHorarios(ubicacionId);
+        validarDiaYHorario(ubicacion, dia, horaInicio, horaFin);
 
         LocalDate fechaEjemplo = LocalDate.now().with(TemporalAdjusters.next(dia));
         if (ubicacionRepository.estaOcupada(ubicacionId, fechaEjemplo, horaInicio, horaFin)) {
@@ -121,12 +88,20 @@ public class UbicacionService {
         return true;
     }
 
+    @Cacheable(value = "ubicaciones", key = "#id")
     public Ubicacion obtenerUbicacion(Long id) {
         return ubicacionRepository.findByIdAndActivaTrue(id)
                 .orElseThrow(() -> new BusinessException("Ubicación no encontrada o inactiva"));
     }
 
+    @Cacheable(value = "ubicacionesConHorarios", key = "#id")
+    public Ubicacion obtenerUbicacionConHorarios(Long id) {
+        return ubicacionRepository.findByIdWithHorarios(id)
+                .orElseThrow(() -> new BusinessException("Ubicación no encontrada o inactiva"));
+    }
+
     @Transactional
+    @CacheEvict(value = {"ubicaciones", "ubicacionesActivas", "ubicacionesConHorarios"}, allEntries = true)
     public Ubicacion actualizarUbicacion(Long id, UbicacionDto dto, String emailAdmin) {
         Ubicacion ubicacion = ubicacionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
@@ -135,7 +110,6 @@ public class UbicacionService {
         ubicacion.setCapacidad(dto.getCapacidad());
 
         ubicacion.getHorarios().clear();
-
         dto.getHorarios().forEach(horarioDto -> {
             HorarioUbicacion horario = new HorarioUbicacion();
             horario.setDia(horarioDto.getDia());
@@ -155,6 +129,7 @@ public class UbicacionService {
     }
 
     @Transactional
+    @CacheEvict(value = {"ubicaciones", "ubicacionesActivas", "ubicacionesConHorarios"}, allEntries = true)
     public void desactivarUbicacion(Long id, String emailAdmin) {
         Ubicacion ubicacion = ubicacionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
@@ -173,6 +148,36 @@ public class UbicacionService {
         );
     }
 
+    private void validarDiaYHorario(Ubicacion ubicacion, DayOfWeek dia, LocalTime horaInicio, LocalTime horaFin) {
+        DiaSemana diaActividad = DiaSemana.fromDayOfWeek(dia);
 
+        boolean diaValido = ubicacion.getHorarios().stream()
+                .anyMatch(horario -> horario.getDia() == diaActividad);
 
+        if (!diaValido) {
+            throw new BusinessException("La ubicación no opera los " + diaActividad.getNombre());
+        }
+
+        boolean horarioValido = ubicacion.getHorarios().stream()
+                .filter(horario -> horario.getDia() == diaActividad)
+                .anyMatch(horario ->
+                        !horaInicio.isBefore(horario.getHoraInicio()) &&
+                                !horaFin.isAfter(horario.getHoraFin())
+                );
+
+        if (!horarioValido) {
+            String horariosDisponibles = ubicacion.getHorarios().stream()
+                    .filter(horario -> horario.getDia() == diaActividad)
+                    .map(horario -> String.format("%s - %s",
+                            horario.getHoraInicio(),
+                            horario.getHoraFin()))
+                    .collect(Collectors.joining(", "));
+
+            throw new BusinessException(
+                    String.format("Horario no válido. Horarios disponibles para %s: %s",
+                            diaActividad.getNombre(),
+                            horariosDisponibles)
+            );
+        }
+    }
 }

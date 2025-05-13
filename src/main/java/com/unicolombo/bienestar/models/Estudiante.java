@@ -17,7 +17,7 @@ public class Estudiante {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    @Column(name = "codigo_estudiantil", unique = true, nullable = false, length = 8)
+    @Column(name = "codigo_estudiantil", unique = true, nullable = false, length = 10)
     private String codigoEstudiantil;
 
     @Column(name = "horas_acumuladas", nullable = false)
@@ -28,6 +28,8 @@ public class Estudiante {
 
     @Column(nullable = false)
     private Integer semestre;
+
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

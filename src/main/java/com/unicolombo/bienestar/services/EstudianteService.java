@@ -79,6 +79,13 @@ public class EstudianteService {
                 .map(this::convertToDto);
     }
 
+    public Page<Estudiante> listarEstudiantes(Pageable pageable, String filtro) {
+        if (filtro != null && !filtro.isEmpty()) {
+            return estudianteRepo.findByFiltro(filtro, pageable);
+        }
+        return estudianteRepo.findAll(pageable);
+    }
+
     @Transactional
     public void cambiarEstado(Long id, CambiarEstadoDto dto, Usuario administrador) {
         if (dto == null || dto.getEstado() == null || dto.getMotivo() == null) {
@@ -123,16 +130,19 @@ public class EstudianteService {
 
     private EstudiantePerfilDto mapToPerfilDto(Estudiante estudiante) {
         EstudiantePerfilDto dto = new EstudiantePerfilDto();
+        Usuario usuario = estudiante.getUsuario();
+
         dto.setId(estudiante.getId());
+        dto.setNombre(usuario.getNombre());
+        dto.setApellido(usuario.getApellido());
         dto.setNombreCompleto(estudiante.getNombreCompleto());
-        dto.setEmail(estudiante.getUsuario().getEmail());
+        dto.setEmail(usuario.getEmail());
+
         dto.setCodigoEstudiantil(estudiante.getCodigoEstudiantil());
         dto.setProgramaAcademico(estudiante.getProgramaAcademico());
         dto.setSemestre(estudiante.getSemestre());
+        dto.setHorasAcumuladas(estudiante.getHorasAcumuladas());
         dto.setEstado(estudiante.getEstado());
-
-        // Comentado para implementación futura
-        // dto.setActividades(...);
 
         return dto;
     }
@@ -146,18 +156,22 @@ public class EstudianteService {
         Estudiante estudiante = estudianteRepo.findById(id)
                 .orElseThrow(() -> new BusinessException("Estudiante no encontrado"));
 
+        // Actualizar datos del estudiante
         estudiante.setProgramaAcademico(dto.getProgramaAcademico());
         estudiante.setSemestre(dto.getSemestre());
         estudiante.setEstado(dto.getEstado());
 
-        return estudianteRepo.save(estudiante);
-    }
-
-    public Page<Estudiante> listarEstudiantes(Pageable pageable, String filtro) {
-        if (filtro != null && !filtro.isEmpty()) {
-            return estudianteRepo.findByFiltro(filtro, pageable);
+        // Actualizar datos del usuario asociado
+        Usuario usuario = estudiante.getUsuario();
+        if(dto.getNombre() != null) {
+            usuario.setNombre(dto.getNombre());
         }
-        return estudianteRepo.findAll(pageable);
+        if(dto.getApellido() != null) {
+            usuario.setApellido(dto.getApellido());
+        }
+        usuarioRepo.save(usuario); // Guardar cambios en el usuario
+
+        return estudianteRepo.save(estudiante);
     }
 
 

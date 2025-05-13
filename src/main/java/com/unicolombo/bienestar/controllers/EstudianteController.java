@@ -41,8 +41,6 @@ public class EstudianteController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-
-
     @Autowired
     private JwtService jwtService;
 
@@ -121,6 +119,25 @@ public class EstudianteController {
                         "page", estudiantes.getNumber(),
                         "size", estudiantes.getSize()
                 )
+        ));
+    }
+
+    @PatchMapping("/{id}/estado")
+    @Operation(summary = "Cambiar estado de estudiante")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> cambiarEstadoEstudiante(
+            @PathVariable Long id,
+            @Valid @RequestBody CambiarEstadoDto dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        Usuario administrador = usuarioRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new BusinessException("Usuario administrador no encontrado"));
+
+        estudianteService.cambiarEstado(id, dto, administrador);
+
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Estado del estudiante actualizado a " + dto.getEstado()
         ));
     }
 
