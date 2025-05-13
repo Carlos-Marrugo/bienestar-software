@@ -11,17 +11,10 @@ import java.time.LocalDateTime;
 @Data
 public class CambiarEstadoDto {
     @NotNull(message = "El estado es obligatorio")
-    @Pattern(regexp = "ACTIVO|INACTIVO|GRADUADO|SUSPENDIDO|EGRESADO",
-            message = "Estado no valido")
     private EstadoEstudiante estado;
 
-
-    @Size(max = 255, message = "La observacion no puede exceder de 255 caracteres")
+    @Size(max = 255, message = "La observación no puede exceder de 255 caracteres")
     private String motivo;
 
     private LocalDateTime fechaFin;
-
-    public EstadoEstudiante getEstado() {
-        return this.estado;
-    }
 }

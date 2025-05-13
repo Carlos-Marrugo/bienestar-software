@@ -34,22 +34,29 @@ public class AuthService {
     public Usuario authenticate(String email, String credencial) {
         validarCorreoInstitucional(email);
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+                .orElseThrow(() -> new BusinessException("Credenciales inválidas"));
+
+        if (!usuario.isActivo()) {
+            throw new BusinessException("Usuario inactivo");
+        }
 
         switch(usuario.getRol()) {
             case ESTUDIANTE:
                 if (usuario.getEstudiante() == null ||
                         !usuario.getEstudiante().getCodigoEstudiantil().equals(credencial)) {
-                    throw new RuntimeException("Código estudiantil incorrecto");
+                    throw new BusinessException("Código estudiantil incorrecto");
                 }
                 break;
 
             case ADMIN:
             case INSTRUCTOR:
                 if (!passwordEncoder.matches(credencial, usuario.getPassword())) {
-                    throw new RuntimeException("Contraseña incorrecta");
+                    throw new BusinessException("Contraseña incorrecta");
                 }
                 break;
+
+            default:
+                throw new BusinessException("Rol no soportado para autenticación");
         }
 
         emailService.sendLoginNotification(

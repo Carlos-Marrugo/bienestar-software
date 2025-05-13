@@ -10,8 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "actividades")
-@Data
+@Table(name = "actividades", indexes = {
+        @Index(name = "idx_actividad_fecha", columnList = "fechaInicio"),
+        @Index(name = "idx_actividad_ubicacion", columnList = "ubicacion_id"),
+        @Index(name = "idx_actividad_instructor", columnList = "instructor_id")
+})
 public class Actividad {
 
     @Id
@@ -21,7 +24,7 @@ public class Actividad {
     @Column(nullable = false)
     private String nombre;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "ubicacion_id")
     private Ubicacion ubicacion;
 
