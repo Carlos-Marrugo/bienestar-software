@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.services;
 
+import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ public class AuthService {
 
 
     public Usuario authenticate(String email, String credencial) {
+        validarCorreoInstitucional(email);
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
 
@@ -60,6 +62,7 @@ public class AuthService {
     }
 
     public Usuario authenticateEstudiante(String email, String codigoEstudiantil) {
+        validarCorreoInstitucional(email);
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
 
@@ -73,6 +76,7 @@ public class AuthService {
 
 
     public void sendResetPasswordEmail(String email) {
+        validarCorreoInstitucional(email);
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("No existe un usuario con ese correo"));
 
@@ -85,5 +89,9 @@ public class AuthService {
         emailService.sendWelcomeEmail(email, subject, body);
     }
 
-
+    private void validarCorreoInstitucional(String email) {
+        if (!email.endsWith("@unicolombo.edu.co")) {
+            throw new BusinessException("Solo se permiten correos institucionales");
+        }
+    }
 }

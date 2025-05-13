@@ -1,12 +1,15 @@
 package com.unicolombo.bienestar.dto;
 
 
+import com.unicolombo.bienestar.models.DiaSemana;
+import com.unicolombo.bienestar.models.Ubicacion;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -16,8 +19,8 @@ public class ActividadCreateDto {
     @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
 
-    @NotBlank(message = "Ubicacion es obligatoria")
-    private String ubicacion;
+    @NotNull(message = "Ubicacion es obligatoria")
+    private Long ubicacionId;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
     private LocalDate fechaInicio;
@@ -47,9 +50,12 @@ public class ActividadCreateDto {
     @NotNull(message = "El ID del instructor es obligatorio")
     private Long instructorId;
 
-    public ActividadCreateDto(String nombre, String ubicacion, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Integer maxEstudiantes, Long instructorId) {
+    @NotNull
+    private DiaSemana dia;
+
+    public ActividadCreateDto(String nombre, Long ubicacionId, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Integer maxEstudiantes, Long instructorId) {
         this.nombre = nombre;
-        this.ubicacion = ubicacion;
+        this.ubicacionId = ubicacionId;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
         this.horaInicio = horaInicio;
@@ -66,12 +72,12 @@ public class ActividadCreateDto {
         this.nombre = nombre;
     }
 
-    public String getUbicacion() {
-        return ubicacion;
+    public Long getUbicacion() {
+        return ubicacionId;
     }
 
-    public void setUbicacion(String ubicacion) {
-        this.ubicacion = ubicacion;
+    public void setUbicacion(Long ubicacionId) {
+        this.ubicacionId = ubicacionId;
     }
 
     public LocalDate getFechaInicio() {

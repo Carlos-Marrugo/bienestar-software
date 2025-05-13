@@ -186,34 +186,38 @@ public class ActividadController {
     }
 
     private Map<String, Object> mapearActividadDto(Actividad actividad) {
-        Instructor instructor = actividad.getInstructor();
-        Usuario usuarioInstructor = actividad.getInstructor().getUsuario();
+        Objects.requireNonNull(actividad, "La actividad no puede ser nula");
 
-        Map<String,Object> instructorMap = new LinkedHashMap<>();
-        instructorMap.put("id", instructor.getId());
-        instructorMap.put("nombre", Map.of(
-                "id", instructor.getId(),
-                "usuario", Map.of(
-                        "id", usuarioInstructor.getId(),
-                        "nombre", usuarioInstructor.getNombre(),
-                        "apellido", usuarioInstructor.getApellido(),
-                        "email", usuarioInstructor.getEmail(),
-                        "rol", usuarioInstructor.getRol().name(),
-                        "activo", usuarioInstructor.isActivo()
-                ),
-                "especialidad", instructor.getEspecialidad(),
-                "fechaContratacion", instructor.getFechaContratacion(),
-                "nombreCompleto", instructor.getNombreCompleto()
-        ));
+        Map<String, Object> instructorMap = new LinkedHashMap<>();
+        if (actividad.getInstructor() != null && actividad.getInstructor().getUsuario() != null) {
+            Instructor instructor = actividad.getInstructor();
+            Usuario usuarioInstructor = instructor.getUsuario();
+
+            instructorMap.put("id", instructor.getId());
+            instructorMap.put("nombre", Map.of(
+                    "id", instructor.getId(),
+                    "usuario", Map.of(
+                            "id", usuarioInstructor.getId(),
+                            "nombre", Objects.toString(usuarioInstructor.getNombre(), ""),
+                            "apellido", Objects.toString(usuarioInstructor.getApellido(), ""),
+                            "email", Objects.toString(usuarioInstructor.getEmail(), ""),
+                            "rol", usuarioInstructor.getRol() != null ? usuarioInstructor.getRol().name() : "",
+                            "activo", usuarioInstructor.isActivo()
+                    ),
+                    "especialidad", Objects.toString(instructor.getEspecialidad(), ""),
+                    "fechaContratacion", instructor.getFechaContratacion(),
+                    "nombreCompleto", Objects.toString(instructor.getNombreCompleto(), "")
+            ));
+        }
 
         return Map.of(
                 "id", actividad.getId(),
-                "nombre", actividad.getNombre(),
-                "ubicacion", actividad.getUbicacion(),
-                "fechaInicio", actividad.getFechaInicio(),
-                "fechaFin", actividad.getFechaFin(),
-                "horaInicio", actividad.getHoraInicio(),
-                "horaFin", actividad.getHoraFin(),
+                "nombre", Objects.toString(actividad.getNombre(), ""),
+                "ubicacion", actividad.getUbicacion() != null ? actividad.getUbicacion() : "",
+                "fechaInicio", actividad.getFechaInicio() != null ? actividad.getFechaInicio() : "",
+                "fechaFin", actividad.getFechaFin() != null ? actividad.getFechaFin() : "",
+                "horaInicio", actividad.getHoraInicio() != null ? actividad.getHoraInicio() : "",
+                "horaFin", actividad.getHoraFin() != null ? actividad.getHoraFin() : "",
                 "maxEstudiantes", actividad.getMaxEstudiantes(),
                 "instructor", instructorMap
         );

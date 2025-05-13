@@ -11,19 +11,27 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UbicacionRepository extends JpaRepository<Ubicacion, Long> {
+    boolean existsByNombre(String nombre);
     Optional<Ubicacion> findByNombre(String nombre);
 
     @Query("SELECT u FROM Ubicacion u WHERE u.activa = true")
     List<Ubicacion> findAllActivas();
 
+    @Query("SELECT u FROM Ubicacion u WHERE u.id = :id AND u.activa = true")
+    Optional<Ubicacion> findByIdAndActivaTrue(@Param("id") Long id);
+
     @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END " +
-            "FROM Actividad a WHERE a.ubicacion.id = :ubicacionId " +
-            "AND a.fechaInicio = :fecha " +
-            "AND ((a.horaInicio < :horaFin AND a.horaFin > :horaInicio))")
+            "FROM Actividad a WHERE " +
+            "a.ubicacion.id = :ubicacionId AND " +
+            "a.fechaInicio = :fecha AND " +
+            "((a.horaInicio < :horaFin AND a.horaFin > :horaInicio))")
     boolean estaOcupada(
             @Param("ubicacionId") Long ubicacionId,
             @Param("fecha") LocalDate fecha,
             @Param("horaInicio") LocalTime horaInicio,
             @Param("horaFin") LocalTime horaFin
     );
+
+    @Query("SELECT u FROM Ubicacion u LEFT JOIN FETCH u.horarios WHERE u.id = :id")
+    Optional<Ubicacion> findByIdWithHorarios(@Param("id") Long id);
 }

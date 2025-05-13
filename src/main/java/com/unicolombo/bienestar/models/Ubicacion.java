@@ -3,7 +3,6 @@ package com.unicolombo.bienestar.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,4 +31,6 @@ public class Ubicacion {
     @OneToMany(mappedBy = "ubicacion")
     @JsonIgnoreProperties("ubicacion")
     private List<Actividad> actividades = new ArrayList<>();
+
+
 }
