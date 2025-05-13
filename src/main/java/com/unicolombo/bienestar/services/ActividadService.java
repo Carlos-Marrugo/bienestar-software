@@ -63,7 +63,6 @@ public class ActividadService {
     @CacheEvict(value = {"actividades", "ubicaciones"}, allEntries = true)
     @Transactional
     public Actividad crearActividad(ActividadCreateDto dto, String emailUsuario) {
-        // Validaciones básicas
         if (dto.getMaxEstudiantes() < 5) {
             throw new BusinessException("La capacidad mínima es de 5 estudiantes");
         }
@@ -76,7 +75,6 @@ public class ActividadService {
             throw new BusinessException("La fecha de fin debe ser posterior a la fecha de inicio");
         }
 
-        // Obtener y validar ubicación
         Ubicacion ubicacion = ubicacionRepository.findById(dto.getUbicacionId())
                 .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
 
@@ -84,7 +82,6 @@ public class ActividadService {
             throw new BusinessException("La fecha no coincide con el día de la semana especificado");
         }
 
-        // Validar disponibilidad
         ubicacionService.validarDisponibilidad(
                 dto.getUbicacionId(),
                 dto.getFechaInicio(),
@@ -92,7 +89,6 @@ public class ActividadService {
                 dto.getHoraFin()
         );
 
-        // Obtener y validar instructor
         Instructor instructor = instructorRepository.findById(dto.getInstructorId())
                 .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
 
@@ -100,10 +96,8 @@ public class ActividadService {
             throw new BusinessException("El instructor está inactivo");
         }
 
-        // Validar solapamiento
         validarSolapamiento(dto, null);
 
-        // Crear actividad
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
         actividad.setUbicacion(ubicacion); // Establecer la ubicación
@@ -114,7 +108,6 @@ public class ActividadService {
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
         actividad.setInstructor(instructor);
 
-        // Auditoría
         auditoriaService.registrarAccion(
                 emailUsuario,
                 TipoAccion.CREACION,

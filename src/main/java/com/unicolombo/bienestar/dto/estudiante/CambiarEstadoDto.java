@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 public class CambiarEstadoDto {
     @NotNull(message = "El estado es obligatorio")
-    private EstadoEstudiante estado;  // Sin @Pattern
+    private EstadoEstudiante estado;
 
     @Size(max = 255, message = "La observación no puede exceder de 255 caracteres")
     private String motivo;

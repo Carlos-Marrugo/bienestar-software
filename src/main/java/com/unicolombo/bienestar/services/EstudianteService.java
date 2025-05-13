@@ -156,12 +156,10 @@ public class EstudianteService {
         Estudiante estudiante = estudianteRepo.findById(id)
                 .orElseThrow(() -> new BusinessException("Estudiante no encontrado"));
 
-        // Actualizar datos del estudiante
         estudiante.setProgramaAcademico(dto.getProgramaAcademico());
         estudiante.setSemestre(dto.getSemestre());
         estudiante.setEstado(dto.getEstado());
 
-        // Actualizar datos del usuario asociado
         Usuario usuario = estudiante.getUsuario();
         if(dto.getNombre() != null) {
             usuario.setNombre(dto.getNombre());
@@ -169,7 +167,7 @@ public class EstudianteService {
         if(dto.getApellido() != null) {
             usuario.setApellido(dto.getApellido());
         }
-        usuarioRepo.save(usuario); // Guardar cambios en el usuario
+        usuarioRepo.save(usuario);
 
         return estudianteRepo.save(estudiante);
     }
