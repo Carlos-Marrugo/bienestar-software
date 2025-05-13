@@ -10,8 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "actividades")
-@Data
+@Table(name = "actividades", indexes = {
+        @Index(name = "idx_actividad_fecha", columnList = "fechaInicio"),
+        @Index(name = "idx_actividad_ubicacion", columnList = "ubicacion_id"),
+        @Index(name = "idx_actividad_instructor", columnList = "instructor_id")
+})
 public class Actividad {
 
     @Id
@@ -21,8 +24,9 @@ public class Actividad {
     @Column(nullable = false)
     private String nombre;
 
-    @Column(nullable = false)
-    private String ubicacion;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "ubicacion_id")
+    private Ubicacion ubicacion;
 
     @Column(nullable = false, name = "fecha_inicio")
     private LocalDate fechaInicio;
@@ -48,7 +52,27 @@ public class Actividad {
     @JsonIgnoreProperties("actividad")
     private List<AuditoriaActividad> auditorias = new ArrayList<>();
 
-    
+    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("actividad")
+    private List<Inscripcion> inscripciones = new ArrayList<>();
+
+
+    public Actividad() {
+    }
+
+    public Actividad(Long id, String nombre, Ubicacion ubicacion, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Integer maxEstudiantes, Instructor instructor, List<AuditoriaActividad> auditorias, List<Inscripcion> inscripciones) {
+        this.id = id;
+        this.nombre = nombre;
+        this.ubicacion = ubicacion;
+        this.fechaInicio = fechaInicio;
+        this.fechaFin = fechaFin;
+        this.horaInicio = horaInicio;
+        this.horaFin = horaFin;
+        this.maxEstudiantes = maxEstudiantes;
+        this.instructor = instructor;
+        this.auditorias = auditorias;
+        this.inscripciones = inscripciones;
+    }
 
     public Long getId() {
         return id;
@@ -66,11 +90,11 @@ public class Actividad {
         this.nombre = nombre;
     }
 
-    public String getUbicacion() {
+    public Ubicacion getUbicacion() {
         return ubicacion;
     }
 
-    public void setUbicacion(String ubicacion) {
+    public void setUbicacion(Ubicacion ubicacion) {
         this.ubicacion = ubicacion;
     }
 
@@ -120,5 +144,21 @@ public class Actividad {
 
     public void setInstructor(Instructor instructor) {
         this.instructor = instructor;
+    }
+
+    public List<AuditoriaActividad> getAuditorias() {
+        return auditorias;
+    }
+
+    public void setAuditorias(List<AuditoriaActividad> auditorias) {
+        this.auditorias = auditorias;
+    }
+
+    public List<Inscripcion> getInscripciones() {
+        return inscripciones;
+    }
+
+    public void setInscripciones(List<Inscripcion> inscripciones) {
+        this.inscripciones = inscripciones;
     }
 }
