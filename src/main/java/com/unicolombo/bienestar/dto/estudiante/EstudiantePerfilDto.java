@@ -6,6 +6,8 @@ import lombok.Data;
 @Data
 public class EstudiantePerfilDto {
     private Long id;
+    private String nombre;
+    private String apellido;
     private String nombreCompleto;
     private String email;
     private String codigoEstudiantil;

@@ -41,4 +41,7 @@ public interface EstudianteRepository extends JpaRepository<Estudiante, Long> {
             @Param("filtro") String filtro,
             Pageable pageable
     );
+
+    @Query("SELECT DISTINCT e FROM Estudiante e JOIN e.inscripciones i WHERE i.actividad.instructor.id = :instructorId")
+    Page<Estudiante> findByInscripcionesActividadInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
 }

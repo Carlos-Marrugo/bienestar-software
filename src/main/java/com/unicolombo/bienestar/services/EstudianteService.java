@@ -106,7 +106,7 @@ public class EstudianteService {
             suspensionRepo.save(suspension);
         }
 
-        String accion = "Cambio de estado a " + dto.getEstado();
+        TipoAccion accion = TipoAccion.ACTUALIZACION;
         String detalles = String.format(
                 "Estudiante ID: %d | Motivo: %s | Admin: %s",
                 id,
@@ -119,9 +119,6 @@ public class EstudianteService {
         estudiante.setEstado(dto.getEstado());
         estudianteRepo.save(estudiante);
     }
-
-
-
 
 
     private EstudiantePerfilDto mapToPerfilDto(Estudiante estudiante) {
@@ -203,5 +200,10 @@ public class EstudianteService {
         dto.setSemestre(estudiante.getSemestre());
         dto.setEstado(estudiante.getEstado());
         return dto;
+    }
+
+    public Page<EstudianteDto> listarEstudiantesPorInstructor(Long instructorId, Pageable pageable) {
+        return estudianteRepo.findByInscripcionesActividadInstructorId(instructorId, pageable)
+                .map(this::convertToDto);
     }
 }

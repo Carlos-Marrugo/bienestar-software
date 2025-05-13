@@ -19,7 +19,7 @@ public class TokenService {
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .claim("type", "RESET_PASSWORD") // para validar propósito
+                .claim("type", "RESET_PASSWORD")
                 .signWith(SignatureAlgorithm.HS256, SECRET)
                 .compact();
     }

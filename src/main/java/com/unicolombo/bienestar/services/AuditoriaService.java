@@ -9,6 +9,7 @@ import com.unicolombo.bienestar.models.TipoAccion;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.AuditoriaRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -16,20 +17,34 @@ import org.springframework.stereotype.Service;
 
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AuditoriaService {
-
-    @Autowired
-    private AuditoriaRepository auditoriaRepository;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final AuditoriaRepository auditoriaRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Async
-    public void registrarAccion(String emailUsuario, TipoAccion accion, String detalles,
-                                Long actividadId) {
+    public void registrarAccion(String emailUsuario, TipoAccion accion, String detalles) {
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+        registrarAccion(usuario, accion, detalles);
+    }
+
+    @Async
+    public void registrarAccion(Usuario usuario, TipoAccion accion, String detalles) {
+        AuditoriaActividad registro = new AuditoriaActividad();
+        registro.setUsuario(usuario);
+        registro.setAccion(accion);
+        registro.setDetalles(detalles);
+        registro.setFecha(LocalDateTime.now());
+        auditoriaRepository.save(registro);
+    }
+
+    @Async
+    public void registrarAccion(String emailUsuario, TipoAccion accion, String detalles, Long actividadId) {
         try {
             Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
@@ -37,8 +52,8 @@ public class AuditoriaService {
             AuditoriaActividad registro = new AuditoriaActividad();
             registro.setUsuario(usuario);
             registro.setAccion(accion);
-            registro.setFecha(LocalDateTime.now());
             registro.setDetalles(detalles);
+            registro.setFecha(LocalDateTime.now());
 
             if (actividadId != null) {
                 Actividad actividad = new Actividad();
@@ -52,18 +67,7 @@ public class AuditoriaService {
         }
     }
 
-    @Async
-    public void registrarAccion(String emailUsuario, TipoAccion accion, String detalles) {
-        registrarAccion(emailUsuario, accion, detalles, null);
-    }
-
-    @Async
-    public void registrarAccion(Usuario usuario, String accion, String detalles) {
-        AuditoriaActividad registro = new AuditoriaActividad();
-        registro.setUsuario(usuario);
-        registro.setAccion(TipoAccion.valueOf(accion));
-        registro.setFecha(LocalDateTime.now());
-        registro.setDetalles(detalles);
-        auditoriaRepository.save(registro);
+    public List<AuditoriaActividad> obtenerUltimas5Auditorias() {
+        return auditoriaRepository.findTop5ByOrderByFechaDesc();
     }
 }
