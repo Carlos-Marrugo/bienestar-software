@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.dto;
 
 import com.unicolombo.bienestar.models.DiaSemana;
 import com.unicolombo.bienestar.models.Ubicacion;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -20,6 +21,7 @@ public class ActividadCreateDto {
     private String nombre;
 
     @NotNull(message = "Ubicacion es obligatoria")
+    @Column(name = "ubicacion_id")
     private Long ubicacionId;
 
     @NotNull(message = "La fecha de inicio es obligatoria")

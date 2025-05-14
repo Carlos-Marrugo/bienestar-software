@@ -78,6 +78,11 @@ public class ActividadService {
         Ubicacion ubicacion = ubicacionRepository.findById(dto.getUbicacionId())
                 .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
 
+        if (dto.getMaxEstudiantes() > ubicacion.getCapacidad()) {
+            throw new BusinessException("La capacidad máxima de estudiantes (" + dto.getMaxEstudiantes() +
+                    ") excede la capacidad de la ubicación (" + ubicacion.getCapacidad() + ")");
+        }
+
         if (!dto.getFechaInicio().getDayOfWeek().equals(dto.getDia().getDayOfWeek())) {
             throw new BusinessException("La fecha no coincide con el día de la semana especificado");
         }
@@ -100,7 +105,7 @@ public class ActividadService {
 
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
-        actividad.setUbicacion(ubicacion); // Establecer la ubicación
+        actividad.setUbicacion(ubicacion);
         actividad.setFechaInicio(dto.getFechaInicio());
         actividad.setFechaFin(dto.getFechaFin());
         actividad.setHoraInicio(dto.getHoraInicio());

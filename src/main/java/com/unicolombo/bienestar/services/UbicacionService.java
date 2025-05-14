@@ -155,14 +155,18 @@ public class UbicacionService {
                 .anyMatch(horario -> horario.getDia() == diaActividad);
 
         if (!diaValido) {
-            throw new BusinessException("La ubicación no opera los " + diaActividad.getNombre());
+            throw new BusinessException("Este lugar no esta disponible  " + diaActividad.getNombre());
         }
 
         boolean horarioValido = ubicacion.getHorarios().stream()
                 .filter(horario -> horario.getDia() == diaActividad)
                 .anyMatch(horario ->
                         !horaInicio.isBefore(horario.getHoraInicio()) &&
-                                !horaFin.isAfter(horario.getHoraFin())
+                                !horaFin.isAfter(horario.getHoraFin()) ||
+                                (horaInicio.isBefore(horario.getHoraInicio()) &&
+                                        horaFin.isAfter(horario.getHoraInicio())) ||
+                                (horaInicio.isBefore(horario.getHoraFin()) &&
+                                        horaFin.isAfter(horario.getHoraFin()))
                 );
 
         if (!horarioValido) {
