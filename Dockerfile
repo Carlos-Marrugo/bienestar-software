@@ -1,20 +1,23 @@
 FROM eclipse-temurin:21-jdk-jammy as builder
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
-
 WORKDIR /workspace/app
 
-COPY pom.xml .
 COPY mvnw .
 COPY .mvn .mvn
+COPY pom.xml .
 RUN chmod +x mvnw
+
 RUN ./mvnw dependency:go-offline
 
-COPY --chown=1000:1000 src src
+COPY src src
 
-RUN ./mvnw package -DskipTests \
-    -Dfile.encoding=UTF-8 \
-    -Dproject.build.sourceEncoding=UTF-8 \
-    -Dproject.reporting.outputEncoding=UTF-8 \
-    -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+RUN ./mvnw package -DskipTests
+
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
+COPY --from=builder /workspace/app/target/*.jar app.jar
+
+ENV PORT 8080
+EXPOSE $PORT
+
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT} -Djava.security.egd=file:/dev/./urandom -jar app.jar"]
