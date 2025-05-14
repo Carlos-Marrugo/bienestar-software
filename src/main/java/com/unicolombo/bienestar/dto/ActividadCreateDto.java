@@ -21,7 +21,7 @@ public class ActividadCreateDto {
     private String nombre;
 
     @NotNull(message = "Ubicacion es obligatoria")
-    @Column(name = "ubicacion_id") // Añade esta anotación
+    @Column(name = "ubicacion_id")
     private Long ubicacionId;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
