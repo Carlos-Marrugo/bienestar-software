@@ -1,37 +1,22 @@
-# Builder stage
 FROM eclipse-temurin:21-jdk-jammy as builder
-
-# Set encoding and locale
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
-
 WORKDIR /workspace/app
 
-# Copy Maven wrapper and pom.xml
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-RUN chmod +x mvnw
-
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src src
-
-# Build with explicit encoding
-RUN ./mvnw package -DskipTests -Dfile.encoding=UTF-8
-
-# Runtime stage
-FROM eclipse-temurin:21-jre-jammy
-WORKDIR /app
-
-# Copy built jar from builder
-COPY --from=builder /workspace/app/target/*.jar app.jar
-
-# Set encoding and locale
+# Configurar locale y encoding primero
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
+COPY pom.xml .
+COPY mvnw .
+COPY .mvn .mvn
+RUN chmod +x mvnw
+RUN ./mvnw dependency:go-offline
+
+COPY src src
+# Añadir parámetros de encoding
+RUN ./mvnw package -DskipTests -Dfile.encoding=UTF-8 -Dproject.build.sourceEncoding=UTF-8
+
+FROM eclipse-temurin:21-jdk-jammy
+WORKDIR /app
+COPY --from=builder /workspace/app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

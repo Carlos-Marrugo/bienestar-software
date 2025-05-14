@@ -1,40 +1,7 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:15
-    container_name: bienestar_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: bienestar
+  java_app:
+    container_name: java_app
+    image: pee-java_app:1.0.0
+    build: .
     ports:
-      - "5432:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: bienestar_app
-    environment:
-      DB_URL: jdbc:postgresql://postgres:5432/bienestar
-      DB_USER: postgres
-      DB_PASS: postgres
-      JWT_SECRET: myStrongSecretKey123
-      CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:8080"
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-volumes:
-  pg_data:
+      - 8080:8080
