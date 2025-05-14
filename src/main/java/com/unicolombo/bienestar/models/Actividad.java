@@ -25,7 +25,7 @@ public class Actividad {
     private String nombre;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "ubicacion_id")
+    @JoinColumn(name = "ubicacion_id", nullable = false)
     private Ubicacion ubicacion;
 
     @Column(nullable = false, name = "fecha_inicio")
