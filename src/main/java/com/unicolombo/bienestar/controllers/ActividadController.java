@@ -237,13 +237,20 @@ public class ActividadController {
         dto.put("id", actividad.getId());
         dto.put("nombre", actividad.getNombre());
 
-        if (actividad.getHorarioUbicacion() != null && actividad.getHorarioUbicacion().getUbicacion() != null) {
-            Map<String, Object> ubicacionMap = new LinkedHashMap<>();
-            ubicacionMap.put("id", actividad.getHorarioUbicacion().getUbicacion().getId());
-            ubicacionMap.put("nombre", actividad.getHorarioUbicacion().getUbicacion().getNombre());
-            dto.put("ubicacion", ubicacionMap);
+        if (actividad.getHorarioUbicacion() != null) {
+            if (actividad.getHorarioUbicacion().getUbicacion() != null) {
+                Map<String, Object> ubicacionMap = new LinkedHashMap<>();
+                ubicacionMap.put("id", actividad.getHorarioUbicacion().getUbicacion().getId());
+                ubicacionMap.put("nombre", actividad.getHorarioUbicacion().getUbicacion().getNombre());
+                dto.put("ubicacion", ubicacionMap);
+            }
+
+            dto.put("horaInicio", actividad.getHorarioUbicacion().getHoraInicio().toString());
+            dto.put("horaFin", actividad.getHorarioUbicacion().getHoraFin().toString());
         } else {
             dto.put("ubicacion", null);
+            dto.put("horaInicio", null);
+            dto.put("horaFin", null);
         }
 
         dto.put("fechaInicio", actividad.getFechaInicio().toString());

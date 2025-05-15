@@ -86,16 +86,17 @@ public class ActividadService {
         Instructor instructor = instructorRepository.findById(dto.getInstructorId())
                 .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
 
-        if (actividadRepository.existsByHorarioUbicacionAndFechaInicioBetween(
-                horario,
+        if (actividadRepository.existsSolapamientoHorario(
+                dto.getHorarioUbicacionId(),
                 dto.getFechaInicio(),
-                dto.getFechaFin() != null ? dto.getFechaFin() : dto.getFechaInicio())) {
+                dto.getFechaFin())) {
             throw new BusinessException("Ya existe una actividad en este horario");
         }
 
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
         actividad.setHorarioUbicacion(horario);
+        actividad.setUbicacion(horario.getUbicacion());
         actividad.setFechaInicio(dto.getFechaInicio());
         actividad.setFechaFin(dto.getFechaFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
@@ -180,9 +181,9 @@ public class ActividadService {
 
         if (actividadRepository.existsSolapamientoHorarioExcluyendoActividad(
                 dto.getInstructorId(),
+                dto.getHorarioUbicacionId(),
                 dto.getFechaInicio(),
-                horario.getHoraInicio(),
-                horario.getHoraFin(),
+                dto.getFechaFin(),
                 actividadIdExcluir)) {
             throw new BusinessException("El instructor ya tiene una actividad en este horario");
         }
