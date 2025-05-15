@@ -34,6 +34,9 @@ public class ActividadCreateDto {
 
     private LocalTime horaFin;
 
+    @NotNull
+    private Long horarioUbicacionId;
+
     @AssertTrue(message = "La fecha de fin debe ser posterior a la fecha de inicio")
     public boolean isFechaFinValid() {
         return fechaFin == null || !fechaFin.isBefore(fechaInicio);
@@ -44,6 +47,8 @@ public class ActividadCreateDto {
         if (horaFin == null || horaInicio == null) return true;
         return !horaFin.isBefore(horaInicio);
     }
+
+
 
     @NotNull(message = "El maximo de estudiantes es obligatorio")
     @Min(value = 1, message = "Debe tener al menos 1 estudiante")

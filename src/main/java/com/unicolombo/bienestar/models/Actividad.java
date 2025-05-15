@@ -34,11 +34,6 @@ public class Actividad {
     @Column(nullable = false)
     private LocalDate fechaFin;
 
-    @Column(nullable = false, name = "hora_inicio")
-    private LocalTime horaInicio;
-
-    @Column(name = "hora_fin")
-    private LocalTime horaFin;
 
     @Column(nullable = false, name = "max_estudiantes")
     private Integer maxEstudiantes;
@@ -56,22 +51,13 @@ public class Actividad {
     @JsonIgnoreProperties("actividad")
     private List<Inscripcion> inscripciones = new ArrayList<>();
 
+    @ManyToOne
+    @JoinColumn(name = "horario_ubicacion_id")
+    @JsonIgnoreProperties("actividades")
+    private HorarioUbicacion horarioUbicacion;
+
 
     public Actividad() {
-    }
-
-    public Actividad(Long id, String nombre, Ubicacion ubicacion, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Integer maxEstudiantes, Instructor instructor, List<AuditoriaActividad> auditorias, List<Inscripcion> inscripciones) {
-        this.id = id;
-        this.nombre = nombre;
-        this.ubicacion = ubicacion;
-        this.fechaInicio = fechaInicio;
-        this.fechaFin = fechaFin;
-        this.horaInicio = horaInicio;
-        this.horaFin = horaFin;
-        this.maxEstudiantes = maxEstudiantes;
-        this.instructor = instructor;
-        this.auditorias = auditorias;
-        this.inscripciones = inscripciones;
     }
 
     public Long getId() {
@@ -114,22 +100,6 @@ public class Actividad {
         this.fechaFin = fechaFin;
     }
 
-    public LocalTime getHoraInicio() {
-        return horaInicio;
-    }
-
-    public void setHoraInicio(LocalTime horaInicio) {
-        this.horaInicio = horaInicio;
-    }
-
-    public LocalTime getHoraFin() {
-        return horaFin;
-    }
-
-    public void setHoraFin(LocalTime horaFin) {
-        this.horaFin = horaFin;
-    }
-
     public Integer getMaxEstudiantes() {
         return maxEstudiantes;
     }
@@ -160,5 +130,13 @@ public class Actividad {
 
     public void setInscripciones(List<Inscripcion> inscripciones) {
         this.inscripciones = inscripciones;
+    }
+
+    public HorarioUbicacion getHorarioUbicacion() {
+        return horarioUbicacion;
+    }
+
+    public void setHorarioUbicacion(HorarioUbicacion horarioUbicacion) {
+        this.horarioUbicacion = horarioUbicacion;
     }
 }

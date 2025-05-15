@@ -1,23 +1,44 @@
 package com.unicolombo.bienestar.dto.Actividad;
 
+import com.unicolombo.bienestar.models.DiaSemana;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Data
 public class UbicacionDto {
-    @NotBlank(message = "El nombre es obligatorio")
+    @NotBlank
     private String nombre;
 
-    @NotNull(message = "La capacidad es obligatoria")
-    @Min(value = 1, message = "La capacidad mínima es 1")
+    @Min(1)
     private Integer capacidad;
 
-    @NotNull(message = "Debe incluir al menos un horario")
-    @Size(min = 1, message = "Debe incluir al menos un horario")
-    private List<HorarioDto> horarios;
+    @Valid
+    @Size(min = 1)
+    private List<HorarioUbicacionDto> horarios;
+
+    @Data
+    public static class HorarioUbicacionDto {
+        @NotNull
+        private DiaSemana dia;
+
+        @NotNull
+        private LocalTime horaInicio;
+
+        @NotNull
+        private LocalTime horaFin;
+
+        @NotNull
+        private LocalDate fechaInicio;
+
+        @NotNull
+        private LocalDate fechaFin;
+    }
 }
