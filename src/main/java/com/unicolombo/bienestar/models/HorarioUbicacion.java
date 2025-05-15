@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "horarios_ubicacion")
@@ -23,6 +26,13 @@ public class HorarioUbicacion {
 
     @Column(nullable = false, name = "hora_fin")
     private LocalTime horaFin;
+
+    private LocalDate fechaInicio;
+    private LocalDate fechaFin;
+
+    @OneToMany(mappedBy = "horarioUbicacion")
+    @JsonIgnoreProperties("horarioUbicacion")
+    private List<Actividad> actividades = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "ubicacion_id", nullable = false)

@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.repositories;
 
 
 import com.unicolombo.bienestar.models.Actividad;
+import com.unicolombo.bienestar.models.HorarioUbicacion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,11 +12,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Optional;
 
 @Repository
 public interface ActividadRepository extends JpaRepository<Actividad, Long> {
-    // En ActividadRepository, reemplaza con:
+
     @Query("SELECT a FROM Actividad a " +
+            "LEFT JOIN FETCH a.horarioUbicacion h " +
             "LEFT JOIN FETCH a.ubicacion " +
             "LEFT JOIN FETCH a.instructor i " +
             "LEFT JOIN FETCH i.usuario " +
@@ -28,8 +31,8 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
     @Query("SELECT COUNT(a) > 0 FROM Actividad a WHERE " +
             "a.instructor.id = :instructorId AND " +
             "a.fechaInicio = :fecha AND " +
-            "((a.horaInicio < :horaFin AND a.horaFin > :horaInicio) OR " +
-            "(a.horaInicio = :horaInicio AND a.horaFin = :horaFin)) AND " +
+            "((a.horarioUbicacion.horaInicio < :horaFin AND a.horarioUbicacion.horaFin > :horaInicio) OR " +
+            "(a.horarioUbicacion.horaInicio = :horaInicio AND a.horarioUbicacion.horaFin = :horaFin)) AND " +
             "a.id != :actividadIdExcluir")
     boolean existsSolapamientoHorarioExcluyendoActividad(
             @Param("instructorId") Long instructorId,
@@ -38,10 +41,28 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
             @Param("horaFin") LocalTime horaFin,
             @Param("actividadIdExcluir") Long actividadIdExcluir);
 
+    @Query("SELECT COUNT(a) > 0 FROM Actividad a WHERE " +
+            "a.instructor.id = :instructorId AND " +
+            "a.fechaInicio = :fechaInicio AND " +
+            "a.horarioUbicacion.horaFin > :horaInicio AND " +
+            "a.horarioUbicacion.horaInicio < :horaFin AND " +
+            "a.id != :idNot")
     boolean existsByInstructorIdAndFechaInicioAndHoraInicioLessThanAndHoraFinGreaterThanAndIdNot(
-            Long instructorId,
-            LocalDate fechaInicio,
-            LocalTime horaFin,
-            LocalTime horaInicio,
-            Long idNot);
+            @Param("instructorId") Long instructorId,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("horaFin") LocalTime horaFin,
+            @Param("horaInicio") LocalTime horaInicio,
+            @Param("idNot") Long idNot);
+
+    @Query("SELECT COUNT(a) > 0 FROM Actividad a WHERE " +
+            "a.horarioUbicacion = :horario AND " +
+            "(:fechaFin IS NULL OR a.fechaInicio BETWEEN :fechaInicio AND :fechaFin) OR " +
+            "(a.fechaFin BETWEEN :fechaInicio AND :fechaFin)")
+    boolean existsByHorarioUbicacionAndFechaInicioBetween(
+            @Param("horario") HorarioUbicacion horario,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin") LocalDate fechaFin);
+
+    @Query("SELECT a FROM Actividad a JOIN FETCH a.horarioUbicacion WHERE a.id = :id")
+    Optional<Actividad> findByIdWithHorario(@Param("id") Long id);
 }

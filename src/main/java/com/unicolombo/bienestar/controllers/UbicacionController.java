@@ -1,7 +1,9 @@
 package com.unicolombo.bienestar.controllers;
 
+import com.unicolombo.bienestar.dto.Actividad.HorarioUbicacionDto;
 import com.unicolombo.bienestar.dto.Actividad.UbicacionDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
 import com.unicolombo.bienestar.services.UbicacionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -25,6 +29,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UbicacionController {
     private final UbicacionService ubicacionService;
+
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -42,6 +47,24 @@ public class UbicacionController {
     public ResponseEntity<?> listarUbicaciones() {
         return ResponseEntity.ok(Map.of("data", ubicacionService.listarUbicacionesActivas()));
     }
+
+    @Operation(summary = "Obtener horarios en uso de una ubicación")
+    @GetMapping("/{id}/horarios-en-uso")
+    public ResponseEntity<?> getHorariosEnUso(@PathVariable Long id) {
+        try {
+            List<HorarioUbicacion> horarios = ubicacionService.findHorariosConActividades(id);
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "data", horarios
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
 
 
     @GetMapping("/{id}/disponibilidad")
@@ -75,15 +98,57 @@ public class UbicacionController {
         return ResponseEntity.ok(Map.of("data", ubicacionService.obtenerUbicacion(id)));
     }
 
+    @Operation(summary = "Actualizar ubicación")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Actualizar ubicación")
     public ResponseEntity<?> actualizarUbicacion(
             @PathVariable Long id,
             @Valid @RequestBody UbicacionDto dto,
             @AuthenticationPrincipal UserDetails userDetails) {
-        Ubicacion ubicacion = ubicacionService.actualizarUbicacion(id, dto, userDetails.getUsername());
-        return ResponseEntity.ok(Map.of("status", "success", "data", ubicacion));
+
+        try {
+            Ubicacion ubicacion = ubicacionService.actualizarUbicacion(id, dto, userDetails.getUsername());
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "data", ubicacion
+            ));
+        } catch (BusinessException e) {
+            if (e.getData() != null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                        "status", "error",
+                        "message", e.getMessage(),
+                        "horariosEnUso", e.getData()
+                ));
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @Operation(summary = "Actualizar horarios de ubicación")
+    @PutMapping("/{id}/horarios")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> actualizarHorarios(
+            @PathVariable Long id,
+            @Valid @RequestBody List<HorarioUbicacionDto> horariosDto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Ubicacion ubicacion = ubicacionService.actualizarHorarios(id, horariosDto, userDetails.getUsername());
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Horarios actualizados correctamente",
+                    "data", ubicacion
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage(),
+                    "horariosEnUso", e.getData() != null ? e.getData() : Collections.emptyList()
+            ));
+        }
     }
 
     @DeleteMapping("/{id}")
