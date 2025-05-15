@@ -2,141 +2,69 @@ package com.unicolombo.bienestar.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
-@Table(name = "actividades", indexes = {
-        @Index(name = "idx_actividad_fecha", columnList = "fecha_inicio"),
-        @Index(name = "idx_actividad_ubicacion", columnList = "ubicacion_id"),
-        @Index(name = "idx_actividad_instructor", columnList = "instructor_id")
-})
 public class Actividad {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String nombre;
-
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "ubicacion_id", nullable = false)
-    private Ubicacion ubicacion;
-
-    @Column(nullable = false, name = "fecha_inicio")
-    private LocalDate fechaInicio;
-
-    @Column(nullable = false)
-    private LocalDate fechaFin;
-
-
-    @Column(nullable = false, name = "max_estudiantes")
-    private Integer maxEstudiantes;
-
-    @ManyToOne
-    @JsonIgnoreProperties("actividades")
-    @JoinColumn(name = "instructor_id", referencedColumnName = "id")
-    private Instructor instructor;
-
-    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("actividad")
-    private List<AuditoriaActividad> auditorias = new ArrayList<>();
-
-    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("actividad")
-    private List<Inscripcion> inscripciones = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "horario_ubicacion_id")
-    @JsonIgnoreProperties("actividades")
     private HorarioUbicacion horarioUbicacion;
 
+    @ManyToOne
+    @JoinColumn(name = "ubicacion_id")
+    private Ubicacion ubicacion;
 
-    public Actividad() {
-    }
+    private LocalDate fechaInicio;
+    private LocalDate fechaFin;
+    private Integer maxEstudiantes;
 
-    public Long getId() {
-        return id;
-    }
+    @ManyToOne
+    @JoinColumn(name = "instructor_id")
+    private Instructor instructor;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @ManyToMany
+    @JoinTable(
+            name = "actividad_horarios",
+            joinColumns = @JoinColumn(name = "actividad_id"),
+            inverseJoinColumns = @JoinColumn(name = "horario_id")
+    )
+    private Set<HorarioUbicacion> horarios = new HashSet<>();
 
-    public String getNombre() {
-        return nombre;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public Ubicacion getUbicacion() {
-        return ubicacion;
-    }
+    public HorarioUbicacion getHorarioUbicacion() { return horarioUbicacion; }
+    public void setHorarioUbicacion(HorarioUbicacion horarioUbicacion) { this.horarioUbicacion = horarioUbicacion; }
 
-    public void setUbicacion(Ubicacion ubicacion) {
-        this.ubicacion = ubicacion;
-    }
+    public Ubicacion getUbicacion() { return ubicacion; }
+    public void setUbicacion(Ubicacion ubicacion) { this.ubicacion = ubicacion; }
 
-    public LocalDate getFechaInicio() {
-        return fechaInicio;
-    }
+    public LocalDate getFechaInicio() { return fechaInicio; }
+    public void setFechaInicio(LocalDate fechaInicio) { this.fechaInicio = fechaInicio; }
 
-    public void setFechaInicio(LocalDate fechaInicio) {
-        this.fechaInicio = fechaInicio;
-    }
+    public LocalDate getFechaFin() { return fechaFin; }
+    public void setFechaFin(LocalDate fechaFin) { this.fechaFin = fechaFin; }
 
-    public LocalDate getFechaFin() {
-        return fechaFin;
-    }
+    public Integer getMaxEstudiantes() { return maxEstudiantes; }
+    public void setMaxEstudiantes(Integer maxEstudiantes) { this.maxEstudiantes = maxEstudiantes; }
 
-    public void setFechaFin(LocalDate fechaFin) {
-        this.fechaFin = fechaFin;
-    }
+    public Instructor getInstructor() { return instructor; }
+    public void setInstructor(Instructor instructor) { this.instructor = instructor; }
 
-    public Integer getMaxEstudiantes() {
-        return maxEstudiantes;
-    }
-
-    public void setMaxEstudiantes(Integer maxEstudiantes) {
-        this.maxEstudiantes = maxEstudiantes;
-    }
-
-    public Instructor getInstructor() {
-        return instructor;
-    }
-
-    public void setInstructor(Instructor instructor) {
-        this.instructor = instructor;
-    }
-
-    public List<AuditoriaActividad> getAuditorias() {
-        return auditorias;
-    }
-
-    public void setAuditorias(List<AuditoriaActividad> auditorias) {
-        this.auditorias = auditorias;
-    }
-
-    public List<Inscripcion> getInscripciones() {
-        return inscripciones;
-    }
-
-    public void setInscripciones(List<Inscripcion> inscripciones) {
-        this.inscripciones = inscripciones;
-    }
-
-    public HorarioUbicacion getHorarioUbicacion() {
-        return horarioUbicacion;
-    }
-
-    public void setHorarioUbicacion(HorarioUbicacion horarioUbicacion) {
-        this.horarioUbicacion = horarioUbicacion;
-    }
+    public Set<HorarioUbicacion> getHorarios() { return horarios; }
+    public void setHorarios(Set<HorarioUbicacion> horarios) { this.horarios = horarios; }
 }

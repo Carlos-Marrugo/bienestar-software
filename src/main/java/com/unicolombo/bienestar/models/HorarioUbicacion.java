@@ -1,5 +1,7 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -30,12 +32,12 @@ public class HorarioUbicacion {
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
 
-    @OneToMany(mappedBy = "horarioUbicacion")
-    @JsonIgnoreProperties("horarioUbicacion")
-    private List<Actividad> actividades = new ArrayList<>();
-
     @ManyToOne
     @JoinColumn(name = "ubicacion_id", nullable = false)
-    @JsonIgnoreProperties("horarios")
+    @JsonBackReference
     private Ubicacion ubicacion;
+
+    @OneToMany(mappedBy = "horarioUbicacion")
+    @JsonIgnore
+    private List<Actividad> actividades = new ArrayList<>();
 }

@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.Actividad.HorarioUbicacionDto;
 import com.unicolombo.bienestar.dto.Actividad.UbicacionDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.models.DiaSemana;
 import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
 import com.unicolombo.bienestar.services.UbicacionService;
@@ -20,8 +21,10 @@ import org.springframework.web.bind.annotation.*;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/ubicaciones")
@@ -45,7 +48,33 @@ public class UbicacionController {
     @GetMapping
     @Operation(summary = "Listar ubicaciones activas")
     public ResponseEntity<?> listarUbicaciones() {
-        return ResponseEntity.ok(Map.of("data", ubicacionService.listarUbicacionesActivas()));
+        List<Ubicacion> ubicaciones = ubicacionService.listarUbicacionesActivas();
+
+        List<Map<String, Object>> response = ubicaciones.stream().map(u -> {
+            Map<String, Object> ubicacionMap = new LinkedHashMap<>();
+            ubicacionMap.put("id", u.getId());
+            ubicacionMap.put("nombre", u.getNombre());
+            ubicacionMap.put("capacidad", u.getCapacidad());
+            ubicacionMap.put("activa", u.getActiva());
+
+            if(u.getHorarios() != null) {
+                ubicacionMap.put("horarios", u.getHorarios().stream().map(h -> {
+                    Map<String, Object> horarioMap = new LinkedHashMap<>();
+                    horarioMap.put("id", h.getId());
+                    horarioMap.put("dia", h.getDia());
+                    horarioMap.put("horaInicio", h.getHoraInicio());
+                    horarioMap.put("horaFin", h.getHoraFin());
+                    return horarioMap;
+                }).collect(Collectors.toList()));
+            }
+
+            return ubicacionMap;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", response
+        ));
     }
 
     @Operation(summary = "Obtener horarios en uso de una ubicación")
@@ -70,15 +99,21 @@ public class UbicacionController {
     @GetMapping("/{id}/disponibilidad")
     public ResponseEntity<?> verificarDisponibilidad(
             @PathVariable Long id,
-            @RequestParam DayOfWeek dia,
+            @RequestParam String dia,
             @RequestParam String horaInicio,
             @RequestParam String horaFin) {
 
         try {
+            DiaSemana diaSemana = DiaSemana.valueOf(dia.toUpperCase());
             LocalTime inicio = LocalTime.parse(horaInicio);
             LocalTime fin = LocalTime.parse(horaFin);
 
-            boolean disponible = ubicacionService.verificarDisponibilidad(id, dia, inicio, fin);
+            boolean disponible = ubicacionService.verificarDisponibilidad(
+                    id,
+                    diaSemana.getDayOfWeek(),
+                    inicio,
+                    fin
+            );
 
             return ResponseEntity.ok(Map.of(
                     "disponible", disponible,
@@ -88,6 +123,16 @@ public class UbicacionController {
             return ResponseEntity.badRequest().body(Map.of(
                     "disponible", false,
                     "mensaje", e.getMessage()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "disponible", false,
+                    "mensaje", "Día no válido. Use: LUNES, MARTES, MIERCOLES, JUEVES, VIERNES, SABADO, DOMINGO"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "disponible", false,
+                    "mensaje", "Formato de hora inválido. Use HH:mm"
             ));
         }
     }

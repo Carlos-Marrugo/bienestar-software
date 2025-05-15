@@ -53,7 +53,14 @@ public class UbicacionService {
 
     @Cacheable(value = "ubicacionesActivas")
     public List<Ubicacion> listarUbicacionesActivas() {
-        return ubicacionRepository.findAllActivas();
+        List<Ubicacion> ubicaciones = ubicacionRepository.findAllActivas();
+        ubicaciones.forEach(u -> {
+            u.getHorarios().forEach(h -> {
+                h.setUbicacion(null);
+                h.setActividades(null);
+            });
+        });
+        return ubicaciones;
     }
 
     public boolean validarDisponibilidad(

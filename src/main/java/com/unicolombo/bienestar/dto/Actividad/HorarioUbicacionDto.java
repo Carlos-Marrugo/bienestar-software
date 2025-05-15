@@ -8,19 +8,21 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Data
-public class HorarioUbicacionDto {
-    @NotNull(message = "El día es obligatorio")
+public  class HorarioUbicacionDto {
+    @NotNull
     private DiaSemana dia;
 
-    @NotNull(message = "La hora de inicio es obligatoria")
+    @NotNull
     private LocalTime horaInicio;
 
-    @NotNull(message = "La hora de fin es obligatoria")
+    @NotNull
     private LocalTime horaFin;
 
-    @NotNull(message = "La fecha de inicio es obligatoria")
+    @NotNull
     private LocalDate fechaInicio;
 
-    @NotNull(message = "La fecha de fin es obligatoria")
+    @NotNull
     private LocalDate fechaFin;
+
+
 }

@@ -1,6 +1,8 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -26,11 +28,10 @@ public class Ubicacion {
 
     @OneToMany(mappedBy = "ubicacion", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("ubicacion")
+    @JsonManagedReference
     private List<HorarioUbicacion> horarios = new ArrayList<>();
 
     @OneToMany(mappedBy = "ubicacion")
-    @JsonIgnoreProperties("ubicacion")
+    @JsonIgnore
     private List<Actividad> actividades = new ArrayList<>();
-
-
 }

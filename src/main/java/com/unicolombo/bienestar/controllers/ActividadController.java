@@ -83,11 +83,11 @@ public class ActividadController {
             throw new AccessDeniedException("No tienes permisos para ver esta actividad");
         }
 
-        if (usuario.getRol() == Role.ESTUDIANTE &&
+        /*if (usuario.getRol() == Role.ESTUDIANTE &&
                 actividad.getInscripciones().stream()
                         .noneMatch(i -> i.getEstudiante().getUsuario().getId().equals(usuario.getId()))) {
             throw new AccessDeniedException("No estás inscrito en esta actividad");
-        }
+        }*/
 
         return ResponseEntity.ok(Map.of(
                 "status", "success",
@@ -237,53 +237,29 @@ public class ActividadController {
         dto.put("id", actividad.getId());
         dto.put("nombre", actividad.getNombre());
 
-        if (actividad.getHorarioUbicacion() != null) {
-            if (actividad.getHorarioUbicacion().getUbicacion() != null) {
-                Map<String, Object> ubicacionMap = new LinkedHashMap<>();
-                ubicacionMap.put("id", actividad.getHorarioUbicacion().getUbicacion().getId());
-                ubicacionMap.put("nombre", actividad.getHorarioUbicacion().getUbicacion().getNombre());
-                dto.put("ubicacion", ubicacionMap);
-            }
-
-            dto.put("horaInicio", actividad.getHorarioUbicacion().getHoraInicio().toString());
-            dto.put("horaFin", actividad.getHorarioUbicacion().getHoraFin().toString());
-        } else {
-            dto.put("ubicacion", null);
-            dto.put("horaInicio", null);
-            dto.put("horaFin", null);
+        if (actividad.getHorarioUbicacion() != null && actividad.getHorarioUbicacion().getUbicacion() != null) {
+            Map<String, Object> ubicacionMap = new LinkedHashMap<>();
+            ubicacionMap.put("id", actividad.getHorarioUbicacion().getUbicacion().getId());
+            ubicacionMap.put("nombre", actividad.getHorarioUbicacion().getUbicacion().getNombre());
+            dto.put("ubicacion", ubicacionMap);
         }
 
         dto.put("fechaInicio", actividad.getFechaInicio().toString());
         dto.put("fechaFin", actividad.getFechaFin() != null ? actividad.getFechaFin().toString() : null);
-
-        if (actividad.getHorarioUbicacion() != null) {
-            dto.put("horaInicio", actividad.getHorarioUbicacion().getHoraInicio().toString());
-            dto.put("horaFin", actividad.getHorarioUbicacion().getHoraFin().toString());
-
-
-            List<Map<String, Object>> horarios = new ArrayList<>();
-            if (actividad.getHorarioUbicacion().getUbicacion() != null &&
-                    actividad.getHorarioUbicacion().getUbicacion().getHorarios() != null) {
-
-                for (HorarioUbicacion h : actividad.getHorarioUbicacion().getUbicacion().getHorarios()) {
-                    Map<String, Object> horarioMap = new LinkedHashMap<>();
-                    horarioMap.put("id", h.getId());
-                    horarioMap.put("dia", h.getDia().toString());
-                    horarioMap.put("horaInicio", h.getHoraInicio().toString());
-                    horarioMap.put("horaFin", h.getHoraFin().toString());
-                    horarioMap.put("fechaInicio", h.getFechaInicio().toString());
-                    horarioMap.put("fechaFin", h.getFechaFin().toString());
-                    horarios.add(horarioMap);
-                }
-            }
-            dto.put("horarios", horarios);
-        } else {
-            dto.put("horaInicio", null);
-            dto.put("horaFin", null);
-            dto.put("horarios", Collections.emptyList());
-        }
-
         dto.put("maxEstudiantes", actividad.getMaxEstudiantes());
+
+        List<Map<String, Object>> horariosList = new ArrayList<>();
+        for (HorarioUbicacion horario : actividad.getHorarios()) {
+            Map<String, Object> horarioMap = new LinkedHashMap<>();
+            horarioMap.put("id", horario.getId());
+            horarioMap.put("dia", horario.getDia().toString());
+            horarioMap.put("horaInicio", horario.getHoraInicio().toString());
+            horarioMap.put("horaFin", horario.getHoraFin().toString());
+            horarioMap.put("fechaInicio", horario.getFechaInicio().toString());
+            horarioMap.put("fechaFin", horario.getFechaFin().toString());
+            horariosList.add(horarioMap);
+        }
+        dto.put("horarios", horariosList);
 
         if (actividad.getInstructor() != null && actividad.getInstructor().getUsuario() != null) {
             Map<String, Object> instructorMap = new LinkedHashMap<>();
@@ -292,8 +268,6 @@ public class ActividadController {
             instructorMap.put("apellido", actividad.getInstructor().getUsuario().getApellido());
             instructorMap.put("email", actividad.getInstructor().getUsuario().getEmail());
             dto.put("instructor", instructorMap);
-        } else {
-            dto.put("instructor", null);
         }
 
         return dto;

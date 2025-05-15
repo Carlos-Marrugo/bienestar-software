@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -93,4 +94,45 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
     );
 
 
+    @Query("""
+    SELECT a FROM Actividad a
+    WHERE a.horarioUbicacion.id = :horarioId
+      AND (
+        (a.fechaInicio BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaInicio))
+        OR (a.fechaFin IS NOT NULL AND a.fechaFin BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaFin))
+        OR (:fechaInicio BETWEEN a.fechaInicio AND COALESCE(a.fechaFin, a.fechaInicio))
+      )
+      AND (:actividadIdExcluir IS NULL OR a.id != :actividadIdExcluir)
+""")
+    List<Actividad> findSolapamientos(
+            @Param("horarioId") Long horarioId,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin") LocalDate fechaFin,
+            @Param("actividadIdExcluir") Long actividadIdExcluir);
+
+    @Query("""
+    SELECT a FROM Actividad a
+    WHERE a.instructor.id = :instructorId
+      AND a.horarioUbicacion.id = :horarioId
+      AND (
+        (a.fechaInicio BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaInicio))
+        OR (a.fechaFin IS NOT NULL AND a.fechaFin BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaFin))
+        OR (:fechaInicio BETWEEN a.fechaInicio AND COALESCE(a.fechaFin, a.fechaInicio))
+      )
+      AND (:actividadIdExcluir IS NULL OR a.id != :actividadIdExcluir)
+""")
+    List<Actividad> findSolapamientosInstructor(
+            @Param("instructorId") Long instructorId,
+            @Param("horarioId") Long horarioId,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin") LocalDate fechaFin,
+            @Param("actividadIdExcluir") Long actividadIdExcluir);
+
+    @Query("SELECT a FROM Actividad a " +
+            "LEFT JOIN FETCH a.horarios h " +
+            "LEFT JOIN FETCH h.ubicacion " +
+            "LEFT JOIN FETCH a.instructor i " +
+            "LEFT JOIN FETCH i.usuario " +
+            "WHERE a.id = :id")
+    Optional<Actividad> findByIdWithHorarios(@Param("id") Long id);
 }
