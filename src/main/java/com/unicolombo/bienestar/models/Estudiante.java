@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Entity
-@Table(name = "estudiante")
+@Table(name = "estudiantes")
 @Data
 public class Estudiante {
 

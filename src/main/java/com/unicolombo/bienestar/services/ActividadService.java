@@ -157,4 +157,8 @@ public class ActividadService {
         return actividadRepository.findById(1L)
                 .orElseThrow(()-> new BusinessException("Actividad no encontrada con id: "+id));
     }
+
+    public boolean existeActividad(Long id) {
+        return actividadRepository.existsById(id);
+    }
 }

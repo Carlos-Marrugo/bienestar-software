@@ -78,4 +78,14 @@ public class InstructorService {
     public Optional<Instructor> obtenerInstructorActivo(Long id) {
         return instructorRepository.findActiveById(id);
     }
+
+    public Long obtenerIdPorCorreo(String correo) {
+        Usuario usuario = usuarioRepository.findByEmail(correo)
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado con el correo: " + correo));
+
+        Instructor instructor = instructorRepository.findByUsuarioId(usuario.getId())
+                .orElseThrow(() -> new BusinessException("Instructor no encontrado para el usuario con correo: " + correo));
+
+        return instructor.getId();
+    }
 }

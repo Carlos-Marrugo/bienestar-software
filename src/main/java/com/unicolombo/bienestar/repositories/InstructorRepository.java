@@ -16,4 +16,7 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
 
     @Query("SELECT i FROM Instructor i JOIN FETCH i.usuario u WHERE i.id = :id AND u.activo = true")
     Optional<Instructor> findActiveById(@Param("id") Long id);
+
+    @Query("SELECT i FROM Instructor i WHERE i.usuario.id = :usuarioId")
+    Optional<Instructor> findByUsuarioId(@Param("usuarioId") Long usuarioId);
 }

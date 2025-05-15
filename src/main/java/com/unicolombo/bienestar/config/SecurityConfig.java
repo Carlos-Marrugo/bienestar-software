@@ -37,7 +37,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir Swagger y recursos públicos
+                        // Endpoints públicos
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -45,20 +45,15 @@ public class SecurityConfig {
                                 "/api/estudiantes/registro"
                         ).permitAll()
 
-                        // Endpoints públicos
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/estudiantes/registro"
-                        ).permitAll()
+                        // Temporal para depuración (quitar en producción)
+//                        .requestMatchers("/api/estudiantes/**").permitAll()
 
-                        // Endpoints con roles específicos
+                        // Configuración original (usar en producción)
+                         .requestMatchers("/api/estudiantes/**").hasRole("ESTUDIANTE")
+
                         .requestMatchers(HttpMethod.GET, "/api/actividades/creadas").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**")
-                        .hasAnyRole("INSTRUCTOR", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/estudiantes/**").hasRole("ESTUDIANTE")
                         .requestMatchers("/api/actividades/**").hasRole("ADMIN")
-
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -66,7 +61,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 
 
     @Bean
