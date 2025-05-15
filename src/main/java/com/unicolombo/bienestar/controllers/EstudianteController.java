@@ -44,7 +44,7 @@ public class EstudianteController {
     @Autowired
     private JwtService jwtService;
 
-    @PostMapping
+    @PostMapping("/registro")
     @Operation(summary = "Registrar nuevo estudiante")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> registrarEstudiante(
