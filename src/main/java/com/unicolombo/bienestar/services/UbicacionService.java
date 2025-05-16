@@ -4,6 +4,7 @@ import com.unicolombo.bienestar.dto.Actividad.HorarioUbicacionDto;
 import com.unicolombo.bienestar.dto.Actividad.UbicacionDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
+import com.unicolombo.bienestar.repositories.ActividadRepository;
 import com.unicolombo.bienestar.repositories.UbicacionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class UbicacionService {
 
     private final UbicacionRepository ubicacionRepository;
     private final AuditoriaService auditoriaService;
+    private final ActividadRepository actividadRepository;
 
     @Transactional
     @CacheEvict(value = {"ubicaciones", "ubicacionesActivas", "ubicacionesConHorarios"}, allEntries = true)
@@ -81,13 +83,37 @@ public class UbicacionService {
         return true;
     }
 
-    public boolean verificarDisponibilidad(Long ubicacionId, DayOfWeek dia, LocalTime horaInicio, LocalTime horaFin) {
+    public boolean verificarDisponibilidad(Long ubicacionId, DiaSemana dia,
+                                           LocalTime horaInicio, LocalTime horaFin,
+                                           LocalDate fecha) {
         Ubicacion ubicacion = obtenerUbicacionConHorarios(ubicacionId);
-        validarDiaYHorario(ubicacion, dia, horaInicio, horaFin);
 
-        LocalDate fechaEjemplo = LocalDate.now().with(TemporalAdjusters.next(dia));
-        if (ubicacionRepository.estaOcupada(ubicacionId, fechaEjemplo, horaInicio, horaFin)) {
-            throw new BusinessException("La ubicación ya tiene actividades en ese horario");
+        boolean horarioBaseExiste = ubicacion.getHorarios().stream()
+                .anyMatch(h -> h.getDia() == dia &&
+                        !horaInicio.isBefore(h.getHoraInicio()) &&
+                        !horaFin.isAfter(h.getHoraFin()));
+
+        if (!horarioBaseExiste) {
+            throw new BusinessException("El horario seleccionado no está dentro de los horarios disponibles");
+        }
+
+        boolean ocupado;
+        if (fecha != null) {
+            ocupado = actividadRepository.existsByUbicacionAndFechaAndHorario(
+                    ubicacionId,
+                    fecha,
+                    horaInicio,
+                    horaFin);
+        } else {
+            ocupado = actividadRepository.existsByUbicacionAndDiaAndHorario(
+                    ubicacionId,
+                    dia,
+                    horaInicio,
+                    horaFin);
+        }
+
+        if (ocupado) {
+            throw new BusinessException("La ubicación ya está reservada en ese horario");
         }
 
         return true;
@@ -217,18 +243,15 @@ public class UbicacionService {
                 .anyMatch(horario -> horario.getDia() == diaActividad);
 
         if (!diaValido) {
-            throw new BusinessException("Este lugar no esta disponible  " + diaActividad.getNombre());
+            throw new BusinessException("Este lugar no está disponible los " + diaActividad.getNombre());
         }
 
         boolean horarioValido = ubicacion.getHorarios().stream()
                 .filter(horario -> horario.getDia() == diaActividad)
                 .anyMatch(horario ->
-                        !horaInicio.isBefore(horario.getHoraInicio()) &&
-                                !horaFin.isAfter(horario.getHoraFin()) ||
-                                (horaInicio.isBefore(horario.getHoraInicio()) &&
-                                        horaFin.isAfter(horario.getHoraInicio())) ||
-                                (horaInicio.isBefore(horario.getHoraFin()) &&
-                                        horaFin.isAfter(horario.getHoraFin()))
+                        horaInicio.isAfter(horario.getHoraInicio()) &&
+                                horaFin.isBefore(horario.getHoraFin()) &&
+                                horaInicio.isBefore(horaFin)
                 );
 
         if (!horarioValido) {
@@ -240,7 +263,7 @@ public class UbicacionService {
                     .collect(Collectors.joining(", "));
 
             throw new BusinessException(
-                    String.format("Horario no válido. Horarios disponibles para %s: %s",
+                    String.format("Horario no válido. Debe estar dentro de los rangos disponibles para %s: %s",
                             diaActividad.getNombre(),
                             horariosDisponibles)
             );

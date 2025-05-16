@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.repositories;
 
 import com.unicolombo.bienestar.models.Actividad;
+import com.unicolombo.bienestar.models.DiaSemana;
 import com.unicolombo.bienestar.models.HorarioUbicacion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +29,6 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
     @Query("SELECT a FROM Actividad a JOIN FETCH a.instructor i WHERE i.id = :instructorId")
     Page<Actividad> findByInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
 
-    // Consulta modificada para evitar problemas de tipo con COALESCE
     @Query("""
     SELECT COUNT(a) > 0 FROM Actividad a
     WHERE a.horarioUbicacion.id = :horarioUbicacionId
@@ -135,4 +135,58 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
             "LEFT JOIN FETCH i.usuario " +
             "WHERE a.id = :id")
     Optional<Actividad> findByIdWithHorarios(@Param("id") Long id);
+
+    @Query("""
+SELECT COUNT(a) > 0 FROM Actividad a 
+JOIN a.horarios h 
+WHERE h.id = :horarioId
+AND (
+    (a.fechaInicio BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaInicio))
+    OR (a.fechaFin IS NOT NULL AND a.fechaFin BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaFin))
+    OR (:fechaInicio BETWEEN a.fechaInicio AND COALESCE(a.fechaFin, a.fechaInicio))
+)
+AND ((:horaInicio < a.horarioUbicacion.horaFin AND :horaFin > a.horarioUbicacion.horaInicio))
+AND (:actividadIdExcluir IS NULL OR a.id != :actividadIdExcluir)
+""")
+    boolean existsSolapamiento(
+            @Param("horarioId") Long horarioId,
+            @Param("horaInicio") LocalTime horaInicio,
+            @Param("horaFin") LocalTime horaFin,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin") LocalDate fechaFin,
+            @Param("actividadIdExcluir") Long actividadIdExcluir);
+
+    @Query("""
+    SELECT COUNT(a) > 0 FROM Actividad a
+    JOIN a.horarios h
+    JOIN h.ubicacion u
+    WHERE u.id = :ubicacionId
+    AND (
+        (a.fechaInicio <= :fecha AND (a.fechaFin IS NULL OR a.fechaFin >= :fecha))
+    )
+    AND (
+        (:horaInicio < h.horaFin AND :horaFin > h.horaInicio)
+    )
+""")
+    boolean existsByUbicacionAndFechaAndHorario(
+            @Param("ubicacionId") Long ubicacionId,
+            @Param("fecha") LocalDate fecha,
+            @Param("horaInicio") LocalTime horaInicio,
+            @Param("horaFin") LocalTime horaFin);
+
+    @Query("""
+    SELECT COUNT(a) > 0 FROM Actividad a
+    JOIN a.horarios h
+    JOIN h.ubicacion u
+    WHERE u.id = :ubicacionId
+    AND h.dia = :dia
+    AND (
+        (:horaInicio < h.horaFin AND :horaFin > h.horaInicio)
+    )
+""")
+    boolean existsByUbicacionAndDiaAndHorario(
+            @Param("ubicacionId") Long ubicacionId,
+            @Param("dia") DiaSemana dia,
+            @Param("horaInicio") LocalTime horaInicio,
+            @Param("horaFin") LocalTime horaFin);
 }

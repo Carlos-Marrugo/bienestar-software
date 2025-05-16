@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
+@Table(name = "actividad")
 public class Actividad {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

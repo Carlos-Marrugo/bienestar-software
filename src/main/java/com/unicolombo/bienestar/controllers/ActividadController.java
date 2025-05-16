@@ -53,18 +53,21 @@ public class ActividadController {
             @Valid @RequestBody ActividadCreateDto dto,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        log.info("Creando actividad por admin: {}", userDetails.getUsername());
+        try {
+            Actividad actividad = actividadService.crearActividad(dto, userDetails.getUsername());
 
-        Actividad actividad = actividadService.crearActividad(dto, userDetails.getUsername());
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "success");
+            response.put("message", "Actividad creada exitosamente");
+            response.put("data", mapToDto(actividad));
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                Map.of(
-                        "status", "success",
-                        "message", "Actividad creada exitosamente",
-                        "data", mapToDto(actividad),
-                        "timestamp", LocalDateTime.now()
-                )
-        );
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        }
     }
 
 
@@ -237,36 +240,35 @@ public class ActividadController {
         dto.put("id", actividad.getId());
         dto.put("nombre", actividad.getNombre());
 
-        if (actividad.getHorarioUbicacion() != null && actividad.getHorarioUbicacion().getUbicacion() != null) {
+        if (actividad.getUbicacion() != null) {
             Map<String, Object> ubicacionMap = new LinkedHashMap<>();
-            ubicacionMap.put("id", actividad.getHorarioUbicacion().getUbicacion().getId());
-            ubicacionMap.put("nombre", actividad.getHorarioUbicacion().getUbicacion().getNombre());
+            ubicacionMap.put("id", actividad.getUbicacion().getId());
+            ubicacionMap.put("nombre", actividad.getUbicacion().getNombre());
             dto.put("ubicacion", ubicacionMap);
         }
 
-        dto.put("fechaInicio", actividad.getFechaInicio().toString());
-        dto.put("fechaFin", actividad.getFechaFin() != null ? actividad.getFechaFin().toString() : null);
+        dto.put("fechaInicio", actividad.getFechaInicio());
+        dto.put("fechaFin", actividad.getFechaFin());
         dto.put("maxEstudiantes", actividad.getMaxEstudiantes());
 
         List<Map<String, Object>> horariosList = new ArrayList<>();
         for (HorarioUbicacion horario : actividad.getHorarios()) {
             Map<String, Object> horarioMap = new LinkedHashMap<>();
             horarioMap.put("id", horario.getId());
-            horarioMap.put("dia", horario.getDia().toString());
+            horarioMap.put("dia", horario.getDia().name());
             horarioMap.put("horaInicio", horario.getHoraInicio().toString());
             horarioMap.put("horaFin", horario.getHoraFin().toString());
-            horarioMap.put("fechaInicio", horario.getFechaInicio().toString());
-            horarioMap.put("fechaFin", horario.getFechaFin().toString());
             horariosList.add(horarioMap);
         }
         dto.put("horarios", horariosList);
 
-        if (actividad.getInstructor() != null && actividad.getInstructor().getUsuario() != null) {
+        if (actividad.getInstructor() != null) {
             Map<String, Object> instructorMap = new LinkedHashMap<>();
             instructorMap.put("id", actividad.getInstructor().getId());
-            instructorMap.put("nombre", actividad.getInstructor().getUsuario().getNombre());
-            instructorMap.put("apellido", actividad.getInstructor().getUsuario().getApellido());
-            instructorMap.put("email", actividad.getInstructor().getUsuario().getEmail());
+            if (actividad.getInstructor().getUsuario() != null) {
+                instructorMap.put("nombre", actividad.getInstructor().getUsuario().getNombre());
+                instructorMap.put("apellido", actividad.getInstructor().getUsuario().getApellido());
+            }
             dto.put("instructor", instructorMap);
         }
 

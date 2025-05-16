@@ -1,3 +1,4 @@
+
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.Actividad.HorarioUbicacionDto;
@@ -19,6 +20,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -101,18 +103,21 @@ public class UbicacionController {
             @PathVariable Long id,
             @RequestParam String dia,
             @RequestParam String horaInicio,
-            @RequestParam String horaFin) {
+            @RequestParam String horaFin,
+            @RequestParam(required = false) String fecha) {
 
         try {
             DiaSemana diaSemana = DiaSemana.valueOf(dia.toUpperCase());
             LocalTime inicio = LocalTime.parse(horaInicio);
             LocalTime fin = LocalTime.parse(horaFin);
+            LocalDate fechaConsulta = fecha != null ? LocalDate.parse(fecha) : null;
 
             boolean disponible = ubicacionService.verificarDisponibilidad(
                     id,
-                    diaSemana.getDayOfWeek(),
+                    diaSemana,
                     inicio,
-                    fin
+                    fin,
+                    fechaConsulta
             );
 
             return ResponseEntity.ok(Map.of(
@@ -124,15 +129,10 @@ public class UbicacionController {
                     "disponible", false,
                     "mensaje", e.getMessage()
             ));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "disponible", false,
-                    "mensaje", "Día no válido. Use: LUNES, MARTES, MIERCOLES, JUEVES, VIERNES, SABADO, DOMINGO"
-            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "disponible", false,
-                    "mensaje", "Formato de hora inválido. Use HH:mm"
+                    "mensaje", "Error al verificar disponibilidad: " + e.getMessage()
             ));
         }
     }
