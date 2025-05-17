@@ -9,6 +9,7 @@ import com.unicolombo.bienestar.models.TipoAccion;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.AuditoriaRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,5 +70,10 @@ public class AuditoriaService {
 
     public List<AuditoriaActividad> obtenerUltimas5Auditorias() {
         return auditoriaRepository.findTop5ByOrderByFechaDesc();
+    }
+
+    @Transactional
+    public void eliminarRegistrosPorActividad(Long actividadId) {
+        auditoriaRepository.deleteByActividadId(actividadId);
     }
 }

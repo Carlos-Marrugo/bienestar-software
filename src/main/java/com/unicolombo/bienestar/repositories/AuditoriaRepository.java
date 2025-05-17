@@ -5,6 +5,7 @@ import com.unicolombo.bienestar.models.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -25,4 +26,8 @@ public interface AuditoriaRepository extends JpaRepository<AuditoriaActividad, L
     @Modifying
     @Query("DELETE FROM AuditoriaActividad a WHERE a.expiryDate < :now")
     void deleteAllByExpiryDateBefore(Instant now);
+
+    @Modifying
+    @Query("DELETE FROM AuditoriaActividad a WHERE a.actividad.id = :actividadId")
+    void deleteByActividadId(@Param("actividadId") Long actividadId);
 }
