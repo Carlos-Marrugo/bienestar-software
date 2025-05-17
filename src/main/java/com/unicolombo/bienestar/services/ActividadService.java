@@ -186,14 +186,18 @@ public class ActividadService {
         actividadRepository.delete(actividad);
     }
 
-
     public boolean existeSolapamientoHorario(Long instructorId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin, Long actividadIdExcluir) {
-        return actividadRepository.existsByInstructorIdAndFechaInicioAndHoraInicioLessThanAndHoraFinGreaterThanAndIdNot(
-                instructorId, fecha, horaFin, horaInicio, actividadIdExcluir);
+        // Versión corregida que usa solo horaFin
+        return actividadRepository.existsSolapamientoHorarioExcluyendoActividad(
+                instructorId,
+                fecha,
+                horaFin,  // Usamos horaFin como límite
+                actividadIdExcluir);
     }
 
+
     private void validarSolapamiento(ActividadCreateDto dto, Long actividadIdExcluir) {
-        if (actividadRepository.existsSolapamientoHorarioExcluyendoActividad(
+        if (existeSolapamientoHorario(
                 dto.getInstructorId(),
                 dto.getFechaInicio(),
                 dto.getHoraInicio(),

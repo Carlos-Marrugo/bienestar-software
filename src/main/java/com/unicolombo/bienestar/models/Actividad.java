@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "actividades", indexes = {
+@Table(name = "actividad", indexes = {
         @Index(name = "idx_actividad_fecha", columnList = "fechaInicio"),
         @Index(name = "idx_actividad_ubicacion", columnList = "ubicacion_id"),
         @Index(name = "idx_actividad_instructor", columnList = "instructor_id")

@@ -1,0 +1,205 @@
+package com.unicolombo.bienestar.controllers;
+
+import com.unicolombo.bienestar.dto.InscripcionCreateDto;
+import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.models.Inscripcion;
+import com.unicolombo.bienestar.models.Role;
+import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.repositories.UsuarioRepository;
+import com.unicolombo.bienestar.services.InscripcionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api")
+@Slf4j
+@Tag(name = "Inscripciones", description = "Gestión de inscripciones a actividades")
+public class InscripcionController {
+
+    @Autowired
+    private InscripcionService inscripcionService;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Operation(summary = "Inscribir estudiante a una actividad",
+            description = "Permite a un estudiante inscribirse en una actividad")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Inscripción creada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @ApiResponse(responseCode = "403", description = "No autorizado"),
+            @ApiResponse(responseCode = "404", description = "Estudiante o actividad no encontrados")
+    })
+    @PostMapping("/estudiantes/{estudianteId}/inscribirse/{actividadId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ESTUDIANTE')")
+    public ResponseEntity<?> inscribirEstudiante(
+            @PathVariable Long estudianteId,
+            @PathVariable Long actividadId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            // Verificar si el usuario es estudiante y está intentando inscribir a otro estudiante
+            Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+            if (usuario.getRol() == Role.ESTUDIANTE && !usuario.getEstudiante().getId().equals(estudianteId)) {
+                throw new AccessDeniedException("Solo puedes inscribirte a ti mismo");
+            }
+
+            // Crear DTO con la información necesaria
+            InscripcionCreateDto dto = new InscripcionCreateDto();
+            dto.setEstudianteId(estudianteId);
+            dto.setActividadId(actividadId);
+
+            // Crear inscripción
+            Inscripcion inscripcion = inscripcionService.crearInscripcion(dto, userDetails.getUsername());
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "status", "success",
+                    "message", "Inscripción creada exitosamente",
+                    "data", inscripcion
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Error al inscribir estudiante", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "Error al procesar la inscripción"
+            ));
+        }
+    }
+
+    @Operation(summary = "Listar estudiantes inscritos en una actividad",
+            description = "Permite a un instructor o admin ver los estudiantes inscritos en una actividad")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+            @ApiResponse(responseCode = "403", description = "No autorizado"),
+            @ApiResponse(responseCode = "404", description = "Actividad no encontrada")
+    })
+    @GetMapping("/instructores/actividades/{actividadId}/estudiantes")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
+    public ResponseEntity<?> listarEstudiantesInscritos(
+            @PathVariable Long actividadId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+            // Si es instructor, verificar que la actividad sea suya
+            if (usuario.getRol() == Role.INSTRUCTOR) {
+                boolean esInstructorDeActividad = inscripcionService.verificarInstructorDeActividad(
+                        usuario.getId(), actividadId);
+
+                if (!esInstructorDeActividad) {
+                    throw new AccessDeniedException("No eres instructor de esta actividad");
+                }
+            }
+
+            List<Inscripcion> inscripciones = inscripcionService.obtenerInscripcionesPorActividad(actividadId);
+
+            // Mapear a formato más simple para respuesta
+            List<Map<String, Object>> estudiantes = inscripciones.stream()
+                    .map(inscripcion -> Map.of(
+                            "inscripcionId", inscripcion.getId(),
+                            "estudiante", Map.of(
+                                    "id", inscripcion.getEstudiante().getId(),
+                                    "nombre", inscripcion.getEstudiante().getNombreCompleto(),
+                                    "codigo", inscripcion.getEstudiante().getCodigoEstudiantil(),
+                                    "programa", inscripcion.getEstudiante().getProgramaAcademico(),
+                                    "fechaInscripcion", inscripcion.getFechaInscripcion(),
+                                    "horasRegistradas", inscripcion.getHorasRegistradas()
+                            )
+                    ))
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "data", estudiantes,
+                    "meta", Map.of(
+                            "total", estudiantes.size(),
+                            "actividadId", actividadId
+                    )
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Error al listar estudiantes inscritos", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "Error al procesar la solicitud"
+            ));
+        }
+    }
+
+    @Operation(summary = "Cancelar inscripción", description = "Permite cancelar una inscripción")
+    @DeleteMapping("/inscripciones/{inscripcionId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ESTUDIANTE')")
+    public ResponseEntity<?> cancelarInscripcion(
+            @PathVariable Long inscripcionId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            // Obtener usuario
+            Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+            // Si es estudiante, verificar que la inscripción sea suya
+            if (usuario.getRol() == Role.ESTUDIANTE) {
+                Inscripcion inscripcion = inscripcionService.obtenerInscripcion(inscripcionId);
+                if (!inscripcion.getEstudiante().getUsuario().getId().equals(usuario.getId())) {
+                    throw new AccessDeniedException("No puedes cancelar inscripciones de otros estudiantes");
+                }
+            }
+
+            inscripcionService.cancelarInscripcion(inscripcionId, userDetails.getUsername());
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Inscripción cancelada exitosamente"
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+}
