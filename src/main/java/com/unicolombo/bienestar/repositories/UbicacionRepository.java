@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.repositories;
 
+import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -22,16 +23,18 @@ public interface UbicacionRepository extends JpaRepository<Ubicacion, Long> {
 
     @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END " +
             "FROM Actividad a WHERE " +
-            "a.ubicacion.id = :ubicacionId AND " +
+            "a.horarioUbicacion.ubicacion.id = :ubicacionId AND " +
             "a.fechaInicio = :fecha AND " +
-            "((a.horaInicio < :horaFin AND a.horaFin > :horaInicio))")
+            "((a.horarioUbicacion.horaInicio < :horaFin AND a.horarioUbicacion.horaFin > :horaInicio))")
     boolean estaOcupada(
             @Param("ubicacionId") Long ubicacionId,
             @Param("fecha") LocalDate fecha,
             @Param("horaInicio") LocalTime horaInicio,
-            @Param("horaFin") LocalTime horaFin
-    );
+            @Param("horaFin") LocalTime horaFin);
 
     @Query("SELECT u FROM Ubicacion u LEFT JOIN FETCH u.horarios WHERE u.id = :id")
     Optional<Ubicacion> findByIdWithHorarios(@Param("id") Long id);
+
+    @Query("SELECT h FROM HorarioUbicacion h WHERE h.id = :id")
+    Optional<HorarioUbicacion> findHorarioById(@Param("id") Long id);
 }

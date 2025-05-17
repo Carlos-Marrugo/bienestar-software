@@ -1,132 +1,100 @@
 package com.unicolombo.bienestar.dto;
 
-
 import com.unicolombo.bienestar.models.DiaSemana;
-import com.unicolombo.bienestar.models.Ubicacion;
 import jakarta.persistence.Column;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
-@Data
 public class ActividadCreateDto {
-
-    @NotBlank(message = "El nombre es obligatorio")
+    @NotBlank(message = "El nombre es requerido")
     private String nombre;
 
-    @NotNull(message = "Ubicacion es obligatoria")
-    @Column(name = "ubicacion_id")
+    @NotNull(message = "La ubicación es requerida")
     private Long ubicacionId;
 
-    @NotNull(message = "La fecha de inicio es obligatoria")
+    @NotNull(message = "La fecha de inicio es requerida")
     private LocalDate fechaInicio;
-
     private LocalDate fechaFin;
 
-    @NotNull(message = "La hora de inicio es obligatoria")
-    private LocalTime horaInicio;
-
-    private LocalTime horaFin;
-
-    @AssertTrue(message = "La fecha de fin debe ser posterior a la fecha de inicio")
-    public boolean isFechaFinValid() {
-        return fechaFin == null || !fechaFin.isBefore(fechaInicio);
-    }
-
-    @AssertTrue(message = "La hora de fin debe ser posterior a la hora de inicio")
-    public boolean isHoraFinValid() {
-        if (horaFin == null || horaInicio == null) return true;
-        return !horaFin.isBefore(horaInicio);
-    }
-
-    @NotNull(message = "El maximo de estudiantes es obligatorio")
-    @Min(value = 1, message = "Debe tener al menos 1 estudiante")
+    @Min(value = 5, message = "La capacidad mínima es de 5 estudiantes")
+    @NotNull(message = "La capacidad es requerida")
     private Integer maxEstudiantes;
 
-    @NotNull(message = "El ID del instructor es obligatorio")
+    @NotNull(message = "El instructor es requerido")
     private Long instructorId;
 
-    @NotNull
-    private DiaSemana dia;
+    @NotEmpty(message = "Debe seleccionar al menos un horario")
+    private List<HorarioActividadDto> horarios;
 
-    public ActividadCreateDto(String nombre, Long ubicacionId, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Integer maxEstudiantes, Long instructorId) {
-        this.nombre = nombre;
-        this.ubicacionId = ubicacionId;
-        this.fechaInicio = fechaInicio;
-        this.fechaFin = fechaFin;
-        this.horaInicio = horaInicio;
-        this.horaFin = horaFin;
-        this.maxEstudiantes = maxEstudiantes;
-        this.instructorId = instructorId;
+    public static class HorarioActividadDto {
+        @NotNull(message = "El ID del horario es requerido")
+        private Long horarioUbicacionId;
+
+        @NotNull(message = "La hora de inicio es requerida")
+        private LocalTime horaInicio;
+
+        @NotNull(message = "La hora de fin es requerida")
+        private LocalTime horaFin;
+
+        public Long getHorarioUbicacionId() {
+            return horarioUbicacionId;
+        }
+
+        public void setHorarioUbicacionId(Long horarioUbicacionId) {
+            this.horarioUbicacionId = horarioUbicacionId;
+        }
+
+        public LocalTime getHoraInicio() {
+            return horaInicio;
+        }
+
+        public void setHoraInicio(LocalTime horaInicio) {
+            this.horaInicio = horaInicio;
+        }
+
+        public LocalTime getHoraFin() {
+            return horaFin;
+        }
+
+        public void setHoraFin(LocalTime horaFin) {
+            this.horaFin = horaFin;
+        }
     }
 
-    public String getNombre() {
-        return nombre;
-    }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public Long getUbicacion() {
+    public Long getUbicacionId() {
         return ubicacionId;
     }
 
-    public void setUbicacion(Long ubicacionId) {
+    public void setUbicacionId(Long ubicacionId) {
         this.ubicacionId = ubicacionId;
     }
 
-    public LocalDate getFechaInicio() {
-        return fechaInicio;
+    public List<HorarioActividadDto> getHorarios() {
+        return horarios;
     }
 
-    public void setFechaInicio(LocalDate fechaInicio) {
-        this.fechaInicio = fechaInicio;
+    public void setHorarios(List<HorarioActividadDto> horarios) {
+        this.horarios = horarios;
     }
 
-    public LocalDate getFechaFin() {
-        return fechaFin;
-    }
+    public LocalDate getFechaInicio() { return fechaInicio; }
+    public void setFechaInicio(LocalDate fechaInicio) { this.fechaInicio = fechaInicio; }
 
-    public void setFechaFin(LocalDate fechaFin) {
-        this.fechaFin = fechaFin;
-    }
+    public LocalDate getFechaFin() { return fechaFin; }
+    public void setFechaFin(LocalDate fechaFin) { this.fechaFin = fechaFin; }
 
-    public LocalTime getHoraInicio() {
-        return horaInicio;
-    }
+    public Integer getMaxEstudiantes() { return maxEstudiantes; }
+    public void setMaxEstudiantes(Integer maxEstudiantes) { this.maxEstudiantes = maxEstudiantes; }
 
-    public void setHoraInicio(LocalTime horaInicio) {
-        this.horaInicio = horaInicio;
-    }
-
-    public LocalTime getHoraFin() {
-        return horaFin;
-    }
-
-    public void setHoraFin(LocalTime horaFin) {
-        this.horaFin = horaFin;
-    }
-
-    public Integer getMaxEstudiantes() {
-        return maxEstudiantes;
-    }
-
-    public void setMaxEstudiantes(Integer maxEstudiantes) {
-        this.maxEstudiantes = maxEstudiantes;
-    }
-
-    public Long getInstructorId() {
-        return instructorId;
-    }
-
-    public void setInstructorId(Long instructorId) {
-        this.instructorId = instructorId;
-    }
+    public Long getInstructorId() { return instructorId; }
+    public void setInstructorId(Long instructorId) { this.instructorId = instructorId; }
 }

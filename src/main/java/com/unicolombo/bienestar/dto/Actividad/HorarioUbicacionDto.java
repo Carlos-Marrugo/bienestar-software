@@ -1,7 +1,6 @@
 package com.unicolombo.bienestar.dto.Actividad;
 
 import com.unicolombo.bienestar.models.DiaSemana;
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -9,18 +8,21 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Data
-public class HorarioDto {
-    @NotNull(message = "El día es obligatorio")
+public  class HorarioUbicacionDto {
+    @NotNull
     private DiaSemana dia;
 
-    @NotNull(message = "La hora de inicio es obligatoria")
+    @NotNull
     private LocalTime horaInicio;
 
-    @NotNull(message = "La hora de fin es obligatoria")
+    @NotNull
     private LocalTime horaFin;
 
+    @NotNull
     private LocalDate fechaInicio;
 
-    @Column(nullable = false)
+    @NotNull
     private LocalDate fechaFin;
+
+
 }
