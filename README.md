@@ -1,3 +1,6 @@
+
+![Purple Blue Modern Futuristic Programming Presentation](https://github.com/user-attachments/assets/30756963-e72d-417b-a937-510d8a0d1fea)
+
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Carlos-Marrugo/bienestar-software)
 
 **Authentication Arquitectura Flujo**
