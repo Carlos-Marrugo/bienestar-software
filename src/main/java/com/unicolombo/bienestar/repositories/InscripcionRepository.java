@@ -34,6 +34,6 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
     Page<Inscripcion> findByInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
 
     @Query("SELECT i FROM Inscripcion i JOIN FETCH i.estudiante e JOIN FETCH e.usuario " +
-            "WHERE i.actividad.id = :actividadId")
+            "WHERE i.actividad.id = :actividadId ORDER BY e.codigoEstudiantil ASC")
     List<Inscripcion> findAllByActividadIdWithEstudiante(@Param("actividadId") Long actividadId);
 }

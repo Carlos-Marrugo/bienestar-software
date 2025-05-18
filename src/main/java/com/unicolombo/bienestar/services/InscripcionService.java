@@ -168,6 +168,7 @@ public class InscripcionService {
             log.error("Actividad con ID {} no encontrada al obtener inscripciones", actividadId);
             throw new BusinessException("Actividad no encontrada con ID: " + actividadId);
         }
+        log.info("Buscando inscripciones para la actividad con ID: {}", actividadId);
         return inscripcionRepository.findAllByActividadIdWithEstudiante(actividadId);
     }
 

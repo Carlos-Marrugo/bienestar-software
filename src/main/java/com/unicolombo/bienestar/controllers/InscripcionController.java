@@ -107,19 +107,24 @@ public class InscripcionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
+            log.info("Solicitando lista de estudiantes inscritos para actividad ID: {}", actividadId);
             Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
+            // Verificar que el instructor tiene permisos para ver esta actividad
             if (usuario.getRol() == Role.INSTRUCTOR) {
                 boolean esInstructorDeActividad = inscripcionService.verificarInstructorDeActividad(
                         usuario.getId(), actividadId);
 
                 if (!esInstructorDeActividad) {
+                    log.warn("Usuario {} intentó acceder a información de actividad {} sin ser el instructor",
+                            usuario.getEmail(), actividadId);
                     throw new AccessDeniedException("No eres instructor de esta actividad");
                 }
             }
 
             List<Inscripcion> inscripciones = inscripcionService.obtenerInscripcionesPorActividad(actividadId);
+            log.info("Encontradas {} inscripciones para la actividad {}", inscripciones.size(), actividadId);
 
             List<Map<String, Object>> estudiantes = inscripciones.stream()
                     .map(inscripcion -> Map.of(
