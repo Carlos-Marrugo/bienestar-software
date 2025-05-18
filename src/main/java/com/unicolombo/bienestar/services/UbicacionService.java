@@ -9,13 +9,17 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -86,45 +90,7 @@ public class UbicacionService {
         return true;
     }
 
-    @Transactional
-    @CacheEvict(value = {"ubicaciones", "ubicacionesActivas", "ubicacionesConHorarios"}, allEntries = true)
-    public Ubicacion actualizarHorarios(Long id, List<HorarioUbicacionDto> horariosDto, String emailAdmin) {
-        Ubicacion ubicacion = ubicacionRepository.findByIdWithHorarios(id)
-                .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
 
-        List<Long> horariosEnUsoIds = ubicacion.getHorarios().stream()
-                .filter(h -> !h.getActividades().isEmpty())
-                .map(HorarioUbicacion::getId)
-                .collect(Collectors.toList());
-
-        if (!horariosEnUsoIds.isEmpty()) {
-            throw new BusinessException(
-                    "No se pueden modificar horarios con actividades asociadas",
-                    horariosEnUsoIds
-            );
-        }
-
-        ubicacion.getHorarios().clear();
-
-        horariosDto.forEach(horarioDto -> {
-            HorarioUbicacion horario = new HorarioUbicacion();
-            horario.setDia(horarioDto.getDia());
-            horario.setHoraInicio(horarioDto.getHoraInicio());
-            horario.setHoraFin(horarioDto.getHoraFin());
-            horario.setFechaInicio(horarioDto.getFechaInicio());
-            horario.setFechaFin(horarioDto.getFechaFin());
-            horario.setUbicacion(ubicacion);
-            ubicacion.getHorarios().add(horario);
-        });
-
-        auditoriaService.registrarAccion(
-                emailAdmin,
-                TipoAccion.ACTUALIZACION,
-                "Horarios de ubicación actualizados"
-        );
-
-        return ubicacionRepository.save(ubicacion);
-    }
 
     @Cacheable(value = "ubicaciones", key = "#id")
     public Ubicacion obtenerUbicacion(Long id) {
@@ -144,15 +110,32 @@ public class UbicacionService {
         Ubicacion ubicacion = ubicacionRepository.findByIdWithHorarios(id)
                 .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
 
-        List<Long> horariosEnUsoIds = ubicacion.getHorarios().stream()
-                .filter(h -> !h.getActividades().isEmpty())
-                .map(HorarioUbicacion::getId)
-                .collect(Collectors.toList());
+        List<Map<String, Object>> conflictos = new ArrayList<>();
 
-        if (!horariosEnUsoIds.isEmpty()) {
+        for (HorarioUbicacion h : ubicacion.getHorarios()) {
+            if (!h.getActividades().isEmpty()) {
+                Map<String, Object> conflicto = new HashMap<>();
+                conflicto.put("horarioId", h.getId());
+
+                List<Map<String, Object>> actividadesList = new ArrayList<>();
+                for (Actividad a : h.getActividades()) {
+                    Map<String, Object> actividadMap = new HashMap<>();
+                    actividadMap.put("id", a.getId());
+                    actividadMap.put("nombre", a.getNombre());
+                    actividadMap.put("fechaInicio", a.getFechaInicio());
+                    actividadesList.add(actividadMap);
+                }
+
+                conflicto.put("actividades", actividadesList);
+                conflictos.add(conflicto);
+            }
+        }
+
+        if (!conflictos.isEmpty()) {
             throw new BusinessException(
                     "No se pueden modificar horarios con actividades asociadas",
-                    horariosEnUsoIds
+                    conflictos,
+                    HttpStatus.CONFLICT
             );
         }
 
@@ -177,12 +160,24 @@ public class UbicacionService {
 
     @Transactional
     @CacheEvict(value = {"ubicaciones", "ubicacionesActivas", "ubicacionesConHorarios"}, allEntries = true)
-    public void desactivarUbicacion(Long id, String emailAdmin) {
+    public Ubicacion desactivarUbicacion(Long id, String emailAdmin) {
         Ubicacion ubicacion = ubicacionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
 
         if (!ubicacion.getActividades().isEmpty()) {
-            throw new BusinessException("No se puede desactivar una ubicación con actividades asignadas");
+            List<Map<String, Object>> conflictos = ubicacion.getActividades().stream()
+                    .map(a -> Map.<String, Object>of(
+                            "id", a.getId(),
+                            "nombre", a.getNombre(),
+                            "fechaInicio", a.getFechaInicio()
+                    ))
+                    .collect(Collectors.toList());
+
+            throw new BusinessException(
+                    "No se puede desactivar una ubicación con actividades asignadas",
+                    conflictos,
+                    HttpStatus.CONFLICT
+            );
         }
 
         ubicacion.setActiva(false);
@@ -193,6 +188,8 @@ public class UbicacionService {
                 TipoAccion.ELIMINACION,
                 "Ubicación desactivada: " + ubicacion.getNombre()
         );
+
+        return ubicacion;
     }
 
     public List<HorarioUbicacion> findHorariosConActividades(Long ubicacionId) {
@@ -239,4 +236,165 @@ public class UbicacionService {
             );
         }
     }
+
+    @Transactional
+    public Ubicacion cambiarEstadoUbicacion(Long id, boolean activa, String emailAdmin) {
+        Ubicacion ubicacion = ubicacionRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Ubicación no encontrada", HttpStatus.NOT_FOUND));
+
+        if (!activa) {
+            List<Map<String, Object>> conflictos = new ArrayList<>();
+
+            for (HorarioUbicacion h : ubicacion.getHorarios()) {
+                for (Actividad a : h.getActividades()) {
+                    Map<String, Object> conflicto = new HashMap<>();
+                    conflicto.put("actividadId", a.getId());
+                    conflicto.put("nombre", a.getNombre());
+                    conflicto.put("fechaInicio", a.getFechaInicio());
+                    conflictos.add(conflicto);
+                }
+            }
+
+            if (!conflictos.isEmpty()) {
+                throw new BusinessException(
+                        "No se puede desactivar una ubicación con actividades asignadas",
+                        conflictos,
+                        HttpStatus.CONFLICT
+                );
+            }
+        }
+
+        ubicacion.setActiva(activa);
+        ubicacion = ubicacionRepository.save(ubicacion);
+
+        auditoriaService.registrarAccion(
+                emailAdmin,
+                activa ? TipoAccion.ACTIVACION : TipoAccion.DESACTIVACION,
+                "Ubicación " + (activa ? "activada" : "desactivada") + ": " + ubicacion.getNombre(),
+                ubicacion.getId()
+        );
+
+        return ubicacion;
+    }
+
+    public Map<String, Object> verificarDisponibilidad(
+            Long ubicacionId,
+            DayOfWeek dia,
+            LocalTime horaInicio,
+            LocalTime horaFin,
+            LocalDate fecha) {
+
+        Ubicacion ubicacion = obtenerUbicacionConHorarios(ubicacionId);
+        DiaSemana diaActividad = DiaSemana.fromDayOfWeek(dia);
+
+        List<HorarioUbicacion> horariosDisponibles = ubicacion.getHorarios().stream()
+                .filter(h -> h.getDia() == diaActividad)
+                .collect(Collectors.toList());
+
+        if (horariosDisponibles.isEmpty()) {
+            throw new BusinessException("La ubicación no está disponible este día");
+        }
+
+        boolean horarioValido = horariosDisponibles.stream()
+                .anyMatch(h ->
+                        !horaInicio.isBefore(h.getHoraInicio()) &&
+                                !horaFin.isAfter(h.getHoraFin()));
+
+        if (!horarioValido) {
+            String rangos = horariosDisponibles.stream()
+                    .map(h -> h.getHoraInicio() + " - " + h.getHoraFin())
+                    .collect(Collectors.joining(", "));
+
+            throw new BusinessException(
+                    "Horario no válido. Rangos disponibles: " + rangos
+            );
+        }
+
+        if (fecha != null) {
+            boolean ocupada = ubicacionRepository.estaOcupada(
+                    ubicacionId,
+                    fecha,
+                    horaInicio,
+                    horaFin
+            );
+
+            if (ocupada) {
+                throw new BusinessException("La ubicación ya está reservada para esta fecha y horario");
+            }
+        }
+
+        return Map.of(
+                "disponible", true,
+                "ubicacion", Map.of(
+                        "id", ubicacion.getId(),
+                        "nombre", ubicacion.getNombre(),
+                        "capacidad", ubicacion.getCapacidad()
+                ),
+                "horariosDisponibles", horariosDisponibles.stream()
+                        .map(h -> Map.of(
+                                "id", h.getId(),
+                                "dia", h.getDia(),
+                                "horaInicio", h.getHoraInicio(),
+                                "horaFin", h.getHoraFin()
+                        ))
+                        .collect(Collectors.toList())
+        );
+    }
+
+
+    @Transactional
+    @CacheEvict(value = {"ubicaciones", "ubicacionesActivas", "ubicacionesConHorarios"}, allEntries = true)
+    public Ubicacion actualizarHorarios(Long id, List<HorarioUbicacionDto> horariosDto, String emailAdmin) {
+        Ubicacion ubicacion = ubicacionRepository.findByIdWithHorarios(id)
+                .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
+
+        List<Map<String, Object>> conflictos = new ArrayList<>();
+
+        for (HorarioUbicacion h : ubicacion.getHorarios()) {
+            if (!h.getActividades().isEmpty()) {
+                Map<String, Object> conflicto = new HashMap<>();
+                conflicto.put("horarioId", h.getId());
+
+                List<Map<String, Object>> actividadesList = new ArrayList<>();
+                for (Actividad a : h.getActividades()) {
+                    Map<String, Object> actividadMap = new HashMap<>();
+                    actividadMap.put("id", a.getId());
+                    actividadMap.put("nombre", a.getNombre());
+                    actividadesList.add(actividadMap);
+                }
+
+                conflicto.put("actividades", actividadesList);
+                conflictos.add(conflicto);
+            }
+        }
+
+        if (!conflictos.isEmpty()) {
+            throw new BusinessException(
+                    "No se pueden modificar horarios con actividades asociadas",
+                    conflictos,
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        ubicacion.getHorarios().clear();
+        horariosDto.forEach(horarioDto -> {
+            HorarioUbicacion horario = new HorarioUbicacion();
+            horario.setDia(horarioDto.getDia());
+            horario.setHoraInicio(horarioDto.getHoraInicio());
+            horario.setHoraFin(horarioDto.getHoraFin());
+            horario.setUbicacion(ubicacion);
+            ubicacion.getHorarios().add(horario);
+        });
+
+        auditoriaService.registrarAccion(
+                emailAdmin,
+                TipoAccion.ACTUALIZACION,
+                "Horarios de ubicación actualizados"
+        );
+
+        return ubicacionRepository.save(ubicacion);
+    }
+
+
+
 }

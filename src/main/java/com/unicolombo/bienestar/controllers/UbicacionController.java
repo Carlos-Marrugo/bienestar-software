@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.Actividad.HorarioUbicacionDto;
 import com.unicolombo.bienestar.dto.Actividad.UbicacionDto;
+import com.unicolombo.bienestar.dto.CambiarEstadoRequest;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
@@ -18,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
@@ -68,26 +70,29 @@ public class UbicacionController {
 
 
     @GetMapping("/{id}/disponibilidad")
-    public ResponseEntity<?> verificarDisponibilidad(
+    @Operation(summary = "Verificar disponibilidad de ubicación")
+    public ResponseEntity<?> verificarDisponibilidadMejorado(
             @PathVariable Long id,
             @RequestParam DayOfWeek dia,
             @RequestParam String horaInicio,
-            @RequestParam String horaFin) {
+            @RequestParam String horaFin,
+            @RequestParam(required = false) LocalDate fecha) {
 
         try {
             LocalTime inicio = LocalTime.parse(horaInicio);
             LocalTime fin = LocalTime.parse(horaFin);
 
-            boolean disponible = ubicacionService.verificarDisponibilidad(id, dia, inicio, fin);
+            Map<String, Object> resultado = ubicacionService.verificarDisponibilidad(id, dia, inicio, fin, fecha);
 
             return ResponseEntity.ok(Map.of(
-                    "disponible", disponible,
-                    "mensaje", disponible ? "Disponible" : "No disponible"
+                    "status", "success",
+                    "data", resultado
             ));
         } catch (BusinessException e) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "disponible", false,
-                    "mensaje", e.getMessage()
+                    "status", "error",
+                    "message", e.getMessage(),
+                    "disponible", false
             ));
         }
     }
@@ -98,7 +103,6 @@ public class UbicacionController {
         return ResponseEntity.ok(Map.of("data", ubicacionService.obtenerUbicacion(id)));
     }
 
-    @Operation(summary = "Actualizar ubicación")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> actualizarUbicacion(
@@ -110,24 +114,19 @@ public class UbicacionController {
             Ubicacion ubicacion = ubicacionService.actualizarUbicacion(id, dto, userDetails.getUsername());
             return ResponseEntity.ok(Map.of(
                     "status", "success",
+                    "message", "Ubicación actualizada correctamente",
                     "data", ubicacion
             ));
         } catch (BusinessException e) {
-            if (e.getData() != null) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                        "status", "error",
-                        "message", e.getMessage(),
-                        "horariosEnUso", e.getData()
-                ));
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                    "status", "error",
-                    "message", e.getMessage()
-            ));
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage(),
+                            "conflictos", e.getData()
+                    ));
         }
     }
 
-    @Operation(summary = "Actualizar horarios de ubicación")
     @PutMapping("/{id}/horarios")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> actualizarHorarios(
@@ -143,21 +142,75 @@ public class UbicacionController {
                     "data", ubicacion
             ));
         } catch (BusinessException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                    "status", "error",
-                    "message", e.getMessage(),
-                    "horariosEnUso", e.getData() != null ? e.getData() : Collections.emptyList()
-            ));
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage(),
+                            "conflictos", e.getData()
+                    ));
         }
     }
 
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Desactivar ubicación")
     public ResponseEntity<?> desactivarUbicacion(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
-        ubicacionService.desactivarUbicacion(id, userDetails.getUsername());
-        return ResponseEntity.ok(Map.of("status", "success", "message", "Ubicación desactivada"));
+
+        try {
+            Ubicacion ubicacion = ubicacionService.desactivarUbicacion(id, userDetails.getUsername());
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Ubicación desactivada correctamente",
+                    "data", Map.of(
+                            "id", ubicacion.getId(),
+                            "nombre", ubicacion.getNombre(),
+                            "activa", ubicacion.getActiva()
+                    )
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage(),
+                            "conflictos", e.getData()
+                    ));
+        }
     }
+
+
+    @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> cambiarEstadoUbicacion(
+            @PathVariable Long id,
+            @RequestBody @Valid CambiarEstadoRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Ubicacion ubicacion = ubicacionService.cambiarEstadoUbicacion(
+                    id,
+                    request.getActiva(),
+                    userDetails.getUsername()
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", request.getActiva() ? "Ubicación activada" : "Ubicación desactivada",
+                    "data", Map.of(
+                            "id", ubicacion.getId(),
+                            "nombre", ubicacion.getNombre(),
+                            "activa", ubicacion.getActiva()
+                    )
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage(),
+                            "data", e.getData()
+                    ));
+        }
+    }
+
 }
