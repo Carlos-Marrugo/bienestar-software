@@ -42,37 +42,28 @@ public class InscripcionService {
     @Autowired
     private AuditoriaService auditoriaService;
 
-    /**
-     * Crea una nueva inscripción verificando todas las condiciones necesarias.
-     * Se mantiene la anotación REQUIRES_NEW pero se mejora la gestión de errores con la auditoría asíncrona.
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     @CacheEvict(value = {"inscripciones", "inscripcionesEstudiante", "inscripcionesActividad"}, allEntries = true)
     public Inscripcion crearInscripcion(InscripcionCreateDto dto, String emailUsuario) {
         log.info("Intentando inscribir estudiante {} en actividad {}", dto.getEstudianteId(), dto.getActividadId());
 
-        // Realizamos primero todas las verificaciones necesarias
-        // 1. Verificamos que la actividad existe
         Actividad actividad = actividadRepository.findById(dto.getActividadId())
                 .orElseThrow(() -> {
                     log.error("Actividad con ID {} no encontrada", dto.getActividadId());
                     return new BusinessException("Actividad no encontrada con ID: " + dto.getActividadId());
                 });
 
-        // 2. Verificamos que el estudiante existe
         Estudiante estudiante = estudianteRepository.findById(dto.getEstudianteId())
                 .orElseThrow(() -> {
                     log.error("Estudiante con ID {} no encontrado", dto.getEstudianteId());
                     return new BusinessException("Estudiante no encontrado con ID: " + dto.getEstudianteId());
                 });
 
-        // 3. Verificamos si ya existe una inscripción
         if (inscripcionRepository.existsByEstudianteIdAndActividadId(dto.getEstudianteId(), dto.getActividadId())) {
             log.warn("El estudiante {} ya está inscrito en la actividad {}", dto.getEstudianteId(), dto.getActividadId());
             throw new BusinessException("El estudiante ya está inscrito en esta actividad");
         }
 
-        // 4. Verificamos cupos disponibles
         int inscritosActuales = inscripcionRepository.countByActividadId(dto.getActividadId());
         if (inscritosActuales >= actividad.getMaxEstudiantes()) {
             log.warn("No hay cupos disponibles para la actividad {}. Cupos: {}, Inscritos: {}",
@@ -80,13 +71,11 @@ public class InscripcionService {
             throw new BusinessException("No hay cupos disponibles para esta actividad");
         }
 
-        // 5. Verificamos estado del estudiante
         if (estudiante.getEstado() != EstadoEstudiante.ACTIVO) {
             log.warn("El estudiante {} no está activo y no puede inscribirse", dto.getEstudianteId());
             throw new BusinessException("El estudiante no está activo y no puede inscribirse");
         }
 
-        // Si llegamos hasta aquí, procedemos a crear y guardar la inscripción
         try {
             Inscripcion inscripcion = new Inscripcion();
             inscripcion.setEstudiante(estudiante);
@@ -94,16 +83,12 @@ public class InscripcionService {
             inscripcion.setFechaInscripcion(LocalDate.now());
             inscripcion.setHorasRegistradas(0);
 
-            // Guardamos la inscripción
             inscripcion = inscripcionRepository.save(inscripcion);
             log.info("Inscripción creada exitosamente: ID {}", inscripcion.getId());
 
-            // Registramos la auditoría después de la transacción
-            // No pasamos actividadId aquí para evitar el error de constraint
             String detalleAuditoria = "Inscripción de estudiante " + estudiante.getNombreCompleto() +
                     " en actividad " + actividad.getNombre();
 
-            // Llamamos al método sin actividadId para evitar problemas de FK
             registrarAuditoriaSinActividad(emailUsuario, TipoAccion.CREACION, detalleAuditoria);
 
             return inscripcion;
@@ -113,9 +98,6 @@ public class InscripcionService {
         }
     }
 
-    /**
-     * Método auxiliar para registrar auditoría sin vincularlo a una actividad específica
-     */
     private void registrarAuditoriaSinActividad(String emailUsuario, TipoAccion accion, String detalles) {
         try {
             auditoriaService.registrarAccion(emailUsuario, accion, detalles);
@@ -125,8 +107,6 @@ public class InscripcionService {
         }
     }
 
-    // El resto de los métodos permanecen igual...
-
     @Cacheable(value = "inscripcion", key = "#id")
     public Inscripcion obtenerInscripcion(Long id) {
         return inscripcionRepository.findById(id)
@@ -135,7 +115,6 @@ public class InscripcionService {
 
     @Cacheable(value = "inscripcionesEstudiante", key = "{#estudianteId, #pageable.pageNumber, #pageable.pageSize}")
     public Page<Inscripcion> listarInscripcionesPorEstudiante(Long estudianteId, Pageable pageable) {
-        // Verificar existencia del estudiante
         if (!estudianteRepository.existsById(estudianteId)) {
             throw new BusinessException("Estudiante no encontrado");
         }
@@ -145,7 +124,6 @@ public class InscripcionService {
 
     @Cacheable(value = "inscripcionesActividad", key = "{#actividadId, #pageable.pageNumber, #pageable.pageSize}")
     public Page<Inscripcion> listarInscripcionesPorActividad(Long actividadId, Pageable pageable) {
-        // Verificar existencia de la actividad
         if (!actividadRepository.existsById(actividadId)) {
             throw new BusinessException("Actividad no encontrada");
         }
@@ -171,7 +149,6 @@ public class InscripcionService {
 
         inscripcionRepository.delete(inscripcion);
 
-        // Registramos auditoría sin pasar actividadId
         registrarAuditoriaSinActividad(emailUsuario, TipoAccion.ELIMINACION, detalleAuditoria);
     }
 
@@ -187,7 +164,6 @@ public class InscripcionService {
 
     @Cacheable(value = "listaInscripcionesActividad", key = "#actividadId")
     public List<Inscripcion> obtenerInscripcionesPorActividad(Long actividadId) {
-        // Verificar primero si la actividad existe
         if(!actividadRepository.existsById(actividadId)) {
             log.error("Actividad con ID {} no encontrada al obtener inscripciones", actividadId);
             throw new BusinessException("Actividad no encontrada con ID: " + actividadId);
