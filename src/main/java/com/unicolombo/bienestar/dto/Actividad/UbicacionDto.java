@@ -24,21 +24,5 @@ public class UbicacionDto {
     @Size(min = 1)
     private List<HorarioUbicacionDto> horarios;
 
-    @Data
-    public static class HorarioUbicacionDto {
-        @NotNull
-        private DiaSemana dia;
 
-        @NotNull
-        private LocalTime horaInicio;
-
-        @NotNull
-        private LocalTime horaFin;
-
-        @NotNull
-        private LocalDate fechaInicio;
-
-        @NotNull
-        private LocalDate fechaFin;
-    }
 }

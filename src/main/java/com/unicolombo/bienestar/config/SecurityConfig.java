@@ -32,34 +32,29 @@ public class SecurityConfig {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
 
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/api/auth/**"
-                        ).permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/api/estudiantes/registro").permitAll()
-
-                        // Endpoints de ADMIN
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/estudiantes").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/estudiantes").hasRole("ADMIN")
-                        .requestMatchers("/api/actividades/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/estudiantes/**").hasAnyRole("ADMIN", "INSTRUCTOR")
-                        .requestMatchers(HttpMethod.PUT, "/api/estudiantes/**").hasAnyRole("ADMIN", "INSTRUCTOR")
-
+                        // Actividades
+                        .requestMatchers(HttpMethod.GET, "/api/actividades").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/actividades").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/actividades/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/actividades/**").hasRole("ADMIN")
 
-                        .requestMatchers("/api/estudiantes/mi-perfil").hasRole("ESTUDIANTE")
-                        .requestMatchers("/api/estudiantes/mi-horas-actividades").hasRole("ESTUDIANTE")
+                        // Inscripciones
+                        .requestMatchers(HttpMethod.POST, "/api/inscripciones").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.GET, "/api/inscripciones/estudiante").hasRole("ESTUDIANTE")
 
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Auditoría
+                        .requestMatchers(HttpMethod.GET, "/api/auditoria/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated()
                 )
@@ -89,8 +84,10 @@ public class SecurityConfig {
                 "https://bienestar-front.onrender.com"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -1,142 +1,86 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
-@Table(name = "actividades", indexes = {
-        @Index(name = "idx_actividad_fecha", columnList = "fechaInicio"),
-        @Index(name = "idx_actividad_ubicacion", columnList = "ubicacion_id"),
-        @Index(name = "idx_actividad_instructor", columnList = "instructor_id")
-})
+@Table(name = "actividad")
+@Getter
+@Setter
+@ToString(exclude = {"horarios", "horariosEspecificos"}) // Evita recursión en toString()
 public class Actividad {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String nombre;
-
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "ubicacion_id", nullable = false)
-    private Ubicacion ubicacion;
-
-    @Column(nullable = false, name = "fecha_inicio")
-    private LocalDate fechaInicio;
-
-    @Column(nullable = false)
-    private LocalDate fechaFin;
-
-
-    @Column(nullable = false, name = "max_estudiantes")
-    private Integer maxEstudiantes;
-
-    @ManyToOne
-    @JsonIgnoreProperties("actividades")
-    @JoinColumn(name = "instructor_id", referencedColumnName = "id")
-    private Instructor instructor;
-
-    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("actividad")
-    private List<AuditoriaActividad> auditorias = new ArrayList<>();
-
-    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("actividad")
-    private List<Inscripcion> inscripciones = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "horario_ubicacion_id")
-    @JsonIgnoreProperties("actividades")
+    @JsonIgnoreProperties({"actividades", "horariosEspecificos"})
     private HorarioUbicacion horarioUbicacion;
 
+    @ManyToOne
+    @JoinColumn(name = "ubicacion_id")
+    private Ubicacion ubicacion;
 
-    public Actividad() {
+    private LocalDate fechaInicio;
+    private LocalDate fechaFin;
+    private Integer maxEstudiantes;
+
+    @ManyToOne
+    @JoinColumn(name = "instructor_id")
+    @JsonIgnoreProperties({"usuario", "actividades"})
+    private Instructor instructor;
+
+    @ManyToMany
+    @JoinTable(
+            name = "actividad_horarios",
+            joinColumns = @JoinColumn(name = "actividad_id"),
+            inverseJoinColumns = @JoinColumn(name = "horario_id")
+    )
+    @JsonIgnoreProperties({"ubicacion", "actividades"})
+    private Set<HorarioUbicacion> horarios = new HashSet<>();
+
+    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"actividad", "horarioBase"})
+    private Set<HorarioActividad> horariosEspecificos = new HashSet<>();
+
+    @Transient
+    @JsonIgnore
+    private List<String> warnings = new ArrayList<>();
+
+    public void addWarning(String warning) {
+        if (this.warnings == null) {
+            this.warnings = new ArrayList<>();
+        }
+        this.warnings.add(warning);
     }
 
-    public Long getId() {
-        return id;
+    public List<String> getWarnings() {
+        return warnings != null ? warnings : new ArrayList<>();
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Actividad actividad = (Actividad) o;
+        return id != null && id.equals(actividad.id);
     }
 
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public Ubicacion getUbicacion() {
-        return ubicacion;
-    }
-
-    public void setUbicacion(Ubicacion ubicacion) {
-        this.ubicacion = ubicacion;
-    }
-
-    public LocalDate getFechaInicio() {
-        return fechaInicio;
-    }
-
-    public void setFechaInicio(LocalDate fechaInicio) {
-        this.fechaInicio = fechaInicio;
-    }
-
-    public LocalDate getFechaFin() {
-        return fechaFin;
-    }
-
-    public void setFechaFin(LocalDate fechaFin) {
-        this.fechaFin = fechaFin;
-    }
-
-    public Integer getMaxEstudiantes() {
-        return maxEstudiantes;
-    }
-
-    public void setMaxEstudiantes(Integer maxEstudiantes) {
-        this.maxEstudiantes = maxEstudiantes;
-    }
-
-    public Instructor getInstructor() {
-        return instructor;
-    }
-
-    public void setInstructor(Instructor instructor) {
-        this.instructor = instructor;
-    }
-
-    public List<AuditoriaActividad> getAuditorias() {
-        return auditorias;
-    }
-
-    public void setAuditorias(List<AuditoriaActividad> auditorias) {
-        this.auditorias = auditorias;
-    }
-
-    public List<Inscripcion> getInscripciones() {
-        return inscripciones;
-    }
-
-    public void setInscripciones(List<Inscripcion> inscripciones) {
-        this.inscripciones = inscripciones;
-    }
-
-    public HorarioUbicacion getHorarioUbicacion() {
-        return horarioUbicacion;
-    }
-
-    public void setHorarioUbicacion(HorarioUbicacion horarioUbicacion) {
-        this.horarioUbicacion = horarioUbicacion;
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

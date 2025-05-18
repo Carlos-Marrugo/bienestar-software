@@ -35,3 +35,23 @@ build/
 # Credenciales
 application.properties
 .env
+
+# Archivos de configuración
+/application*.properties
+/application*.yml
+/config/
+
+# Certificados y claves
+*.jks
+*.keystore
+*.truststore
+*.key
+*.p12
+*.pem
+*.crt
+
+# IDE y sistema
+.idea/
+*.iml
+*.log
+/target/

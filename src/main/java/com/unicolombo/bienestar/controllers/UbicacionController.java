@@ -71,7 +71,7 @@ public class UbicacionController {
 
     @GetMapping("/{id}/disponibilidad")
     @Operation(summary = "Verificar disponibilidad de ubicación")
-    public ResponseEntity<?> verificarDisponibilidadMejorado(
+    public ResponseEntity<?> verificarDisponibilidad(
             @PathVariable Long id,
             @RequestParam DayOfWeek dia,
             @RequestParam String horaInicio,

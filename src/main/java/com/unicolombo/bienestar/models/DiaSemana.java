@@ -28,16 +28,11 @@ public enum DiaSemana {
     }
 
     public static DiaSemana fromDayOfWeek(DayOfWeek dayOfWeek) {
-        for (DiaSemana dia : values()) {
+        for (DiaSemana dia : DiaSemana.values()) {
             if (dia.dayOfWeek == dayOfWeek) {
                 return dia;
             }
         }
         throw new IllegalArgumentException("Día no válido: " + dayOfWeek);
-    }
-
-    @Override
-    public String toString() {
-        return nombre;
     }
 }

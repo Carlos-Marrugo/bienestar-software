@@ -215,7 +215,6 @@ public class EstudianteService {
     }
 
     public Page<EstudianteDto> listarEstudiantesPorInstructor(Long instructorId, Pageable pageable) {
-        return estudianteRepo.findByInscripcionesActividadInstructorId(instructorId, pageable)
-                .map(this::convertToDto);
+        return Page.empty(pageable);
     }
 }

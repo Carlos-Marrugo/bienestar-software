@@ -1,8 +1,12 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -11,7 +15,9 @@ import java.util.List;
 
 @Entity
 @Table(name = "horarios_ubicacion")
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"ubicacion", "actividades"})
 public class HorarioUbicacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,12 +36,25 @@ public class HorarioUbicacion {
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
 
-    @OneToMany(mappedBy = "horarioUbicacion")
-    @JsonIgnoreProperties("horarioUbicacion")
-    private List<Actividad> actividades = new ArrayList<>();
-
     @ManyToOne
     @JoinColumn(name = "ubicacion_id", nullable = false)
-    @JsonIgnoreProperties("horarios")
+    @JsonBackReference
     private Ubicacion ubicacion;
+
+    @OneToMany(mappedBy = "horarioUbicacion")
+    @JsonIgnore
+    private List<Actividad> actividades = new ArrayList<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HorarioUbicacion that = (HorarioUbicacion) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
