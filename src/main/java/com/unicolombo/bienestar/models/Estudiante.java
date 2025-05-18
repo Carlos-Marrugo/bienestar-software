@@ -35,9 +35,9 @@ public class Estudiante {
     @Column(nullable = false)
     private EstadoEstudiante estado = EstadoEstudiante.ACTIVO;
 
-    @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL)
+    /*@OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("estudiante")
-    private List<Inscripcion> inscripciones;
+    private List<Inscripcion> inscripciones;*/
 
     public String getNombreCompleto() {
         return usuario.getNombre() + " " + usuario.getApellido();

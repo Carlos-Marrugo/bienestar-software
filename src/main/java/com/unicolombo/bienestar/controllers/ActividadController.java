@@ -24,6 +24,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 
@@ -51,37 +53,53 @@ public class ActividadController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> crearActividad(
             @Valid @RequestBody ActividadCreateDto dto,
+            BindingResult bindingResult,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        log.info("Creando actividad por admin: {}", userDetails.getUsername());
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errores = bindingResult.getFieldErrors().stream()
+                    .collect(Collectors.toMap(
+                            FieldError::getField,
+                            fieldError -> fieldError.getDefaultMessage() != null ?
+                                    fieldError.getDefaultMessage() : "Error de validación"));
 
-        Actividad actividad = actividadService.crearActividad(dto, userDetails.getUsername());
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "status", "error",
+                            "message", "Errores de validación",
+                            "errors", errores));
+        }
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                Map.of(
-                        "status", "success",
-                        "message", "Actividad creada exitosamente",
-                        "data", actividad,
-                        "timestamp", LocalDateTime.now()
-                )
-        );
+        try {
+            Actividad actividad = actividadService.crearActividad(dto, userDetails.getUsername());
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "success");
+            response.put("message", "Actividad creada exitosamente");
+            response.put("data", mapToDto(actividad));
+
+            if (!actividad.getWarnings().isEmpty()) {
+                response.put("warnings", actividad.getWarnings());
+            }
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage(),
+                    "timestamp", LocalDateTime.now()
+            ));
+        }
     }
 
-    @Operation(summary = "Obtener actividad por ID",
-            description = "ADMIN: Acceso total | INSTRUCTOR: Solo sus actividades | ESTUDIANTE: Solo actividades inscritas")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Actividad encontrada"),
-            @ApiResponse(responseCode = "403", description = "No autorizado"),
-            @ApiResponse(responseCode = "404", description = "Actividad no encontrada")
-    })
+
+    @Operation(summary = "Obtener actividad por ID")
     @GetMapping("/{id}")
     public ResponseEntity<?> getActividadById(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        Actividad actividad = actividadRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
-
+        Actividad actividad = actividadService.findById(id);
         Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
@@ -90,15 +108,15 @@ public class ActividadController {
             throw new AccessDeniedException("No tienes permisos para ver esta actividad");
         }
 
-        if (usuario.getRol() == Role.ESTUDIANTE &&
+        /*if (usuario.getRol() == Role.ESTUDIANTE &&
                 actividad.getInscripciones().stream()
                         .noneMatch(i -> i.getEstudiante().getUsuario().getId().equals(usuario.getId()))) {
             throw new AccessDeniedException("No estás inscrito en esta actividad");
-        }
+        }*/
 
         return ResponseEntity.ok(Map.of(
                 "status", "success",
-                "data", mapearActividadDto(actividad)
+                "data", mapToDto(actividad)
         ));
     }
 
@@ -188,39 +206,103 @@ public class ActividadController {
     private Map<String, Object> mapearActividadDto(Actividad actividad) {
         Objects.requireNonNull(actividad, "La actividad no puede ser nula");
 
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("id", actividad.getId());
+        dto.put("nombre", actividad.getNombre());
+
+        if (actividad.getHorarioUbicacion() != null && actividad.getHorarioUbicacion().getUbicacion() != null) {
+            Map<String, Object> ubicacionMap = new LinkedHashMap<>();
+            ubicacionMap.put("id", actividad.getHorarioUbicacion().getUbicacion().getId());
+            ubicacionMap.put("nombre", actividad.getHorarioUbicacion().getUbicacion().getNombre());
+            dto.put("ubicacion", ubicacionMap);
+        } else {
+            dto.put("ubicacion", null);
+        }
+
+        dto.put("fechaInicio", actividad.getFechaInicio() != null ? actividad.getFechaInicio().toString() : null);
+        dto.put("fechaFin", actividad.getFechaFin() != null ? actividad.getFechaFin().toString() : null);
+
+        if (actividad.getHorarioUbicacion() != null) {
+            dto.put("horaInicio", actividad.getHorarioUbicacion().getHoraInicio().toString());
+            dto.put("horaFin", actividad.getHorarioUbicacion().getHoraFin().toString());
+        } else {
+            dto.put("horaInicio", null);
+            dto.put("horaFin", null);
+        }
+
+        dto.put("maxEstudiantes", actividad.getMaxEstudiantes());
+
         Map<String, Object> instructorMap = new LinkedHashMap<>();
         if (actividad.getInstructor() != null && actividad.getInstructor().getUsuario() != null) {
             Instructor instructor = actividad.getInstructor();
             Usuario usuarioInstructor = instructor.getUsuario();
 
             instructorMap.put("id", instructor.getId());
-            instructorMap.put("nombre", Map.of(
-                    "id", instructor.getId(),
-                    "usuario", Map.of(
-                            "id", usuarioInstructor.getId(),
-                            "nombre", Objects.toString(usuarioInstructor.getNombre(), ""),
-                            "apellido", Objects.toString(usuarioInstructor.getApellido(), ""),
-                            "email", Objects.toString(usuarioInstructor.getEmail(), ""),
-                            "rol", usuarioInstructor.getRol() != null ? usuarioInstructor.getRol().name() : "",
-                            "activo", usuarioInstructor.isActivo()
-                    ),
-                    "especialidad", Objects.toString(instructor.getEspecialidad(), ""),
-                    "fechaContratacion", instructor.getFechaContratacion(),
-                    "nombreCompleto", Objects.toString(instructor.getNombreCompleto(), "")
-            ));
+
+            Map<String, Object> usuarioMap = new LinkedHashMap<>();
+            usuarioMap.put("id", usuarioInstructor.getId());
+            usuarioMap.put("nombre", usuarioInstructor.getNombre());
+            usuarioMap.put("apellido", usuarioInstructor.getApellido());
+            usuarioMap.put("email", usuarioInstructor.getEmail());
+            usuarioMap.put("rol", usuarioInstructor.getRol() != null ? usuarioInstructor.getRol().name() : null);
+            usuarioMap.put("activo", usuarioInstructor.isActivo());
+
+            instructorMap.put("usuario", usuarioMap);
+            instructorMap.put("especialidad", instructor.getEspecialidad());
+            instructorMap.put("fechaContratacion", instructor.getFechaContratacion());
+            instructorMap.put("nombreCompleto", instructor.getNombreCompleto());
+        }
+        dto.put("instructor", instructorMap);
+
+        return dto;
+    }
+
+    private Map<String, Object> mapToDto(Actividad actividad) {
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("id", actividad.getId());
+        dto.put("nombre", actividad.getNombre());
+        dto.put("fechaInicio", actividad.getFechaInicio());
+        dto.put("fechaFin", actividad.getFechaFin());
+        dto.put("maxEstudiantes", actividad.getMaxEstudiantes());
+
+        if (actividad.getUbicacion() != null) {
+            Map<String, Object> ubicacionMap = new LinkedHashMap<>();
+            ubicacionMap.put("id", actividad.getUbicacion().getId());
+            ubicacionMap.put("nombre", actividad.getUbicacion().getNombre());
+            dto.put("ubicacion", ubicacionMap);
         }
 
-        return Map.of(
-                "id", actividad.getId(),
-                "nombre", Objects.toString(actividad.getNombre(), ""),
-                "ubicacion", actividad.getUbicacion() != null ? actividad.getUbicacion() : "",
-                "fechaInicio", actividad.getFechaInicio() != null ? actividad.getFechaInicio() : "",
-                "fechaFin", actividad.getFechaFin() != null ? actividad.getFechaFin() : "",
-                "horaInicio", actividad.getHoraInicio() != null ? actividad.getHoraInicio() : "",
-                "horaFin", actividad.getHoraFin() != null ? actividad.getHoraFin() : "",
-                "maxEstudiantes", actividad.getMaxEstudiantes(),
-                "instructor", instructorMap
-        );
+        if (actividad.getInstructor() != null && actividad.getInstructor().getUsuario() != null) {
+            Map<String, Object> instructorMap = new LinkedHashMap<>();
+            instructorMap.put("id", actividad.getInstructor().getId());
+            instructorMap.put("nombre", actividad.getInstructor().getUsuario().getNombre());
+            dto.put("instructor", instructorMap);
+        }
+
+        if (actividad.getHorariosEspecificos() != null) {
+            List<Map<String, Object>> horariosList = actividad.getHorariosEspecificos().stream()
+                    .map(h -> {
+                        Map<String, Object> horarioMap = new LinkedHashMap<>();
+                        horarioMap.put("id", h.getId());
+                        horarioMap.put("horaInicio", h.getHoraInicio());
+                        horarioMap.put("horaFin", h.getHoraFin());
+
+                        if (h.getHorarioBase() != null) {
+                            Map<String, Object> baseMap = new LinkedHashMap<>();
+                            baseMap.put("id", h.getHorarioBase().getId());
+                            baseMap.put("dia", h.getHorarioBase().getDia());
+                            baseMap.put("horaInicioBase", h.getHorarioBase().getHoraInicio());
+                            baseMap.put("horaFinBase", h.getHorarioBase().getHoraFin());
+                            horarioMap.put("horarioBase", baseMap);
+                        }
+
+                        return horarioMap;
+                    })
+                    .collect(Collectors.toList());
+            dto.put("horarios", horariosList);
+        }
+
+        return dto;
     }
 
     @PutMapping("/{id}")
@@ -245,6 +327,7 @@ public class ActividadController {
             ));
         }
     }
+
 
     @DeleteMapping("eliminar/{id}")
     @PreAuthorize("hasRole('ADMIN')")

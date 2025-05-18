@@ -8,7 +8,6 @@ import com.unicolombo.bienestar.repositories.InstructorRepository;
 import com.unicolombo.bienestar.repositories.UbicacionRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,9 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
-
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -53,112 +55,161 @@ public class ActividadService {
         return actividadRepository.findAll(pageable);
     }
 
-
     public Page<Actividad> findByInstructorId(Long instructorId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").descending());
         return actividadRepository.findByInstructorId(instructorId, pageable);
     }
 
-
-    @CacheEvict(value = {"actividades", "ubicaciones"}, allEntries = true)
     @Transactional
     public Actividad crearActividad(ActividadCreateDto dto, String emailUsuario) {
-        if (dto.getMaxEstudiantes() < 5) {
+        if (dto.getMaxEstudiantes() == null || dto.getMaxEstudiantes() < 5) {
             throw new BusinessException("La capacidad mínima es de 5 estudiantes");
         }
 
-        if (dto.getFechaInicio().isBefore(LocalDate.now())) {
-            throw new BusinessException("La fecha de inicio no puede ser en el pasado");
-        }
-
-        if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
-            throw new BusinessException("La fecha de fin debe ser posterior a la fecha de inicio");
-        }
-
-        Ubicacion ubicacion = ubicacionRepository.findById(dto.getUbicacionId())
-                .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
+        Ubicacion ubicacion = ubicacionRepository.findByIdWithHorarios(dto.getUbicacionId())
+                .orElseThrow(() -> new BusinessException("Ubicación no encontrada o inactiva"));
 
         if (dto.getMaxEstudiantes() > ubicacion.getCapacidad()) {
-            throw new BusinessException("La capacidad máxima de estudiantes (" + dto.getMaxEstudiantes() +
-                    ") excede la capacidad de la ubicación (" + ubicacion.getCapacidad() + ")");
+            throw new BusinessException(String.format(
+                    "La capacidad (%d) excede el máximo de la ubicación (%d)",
+                    dto.getMaxEstudiantes(), ubicacion.getCapacidad()));
         }
-
-        if (!dto.getFechaInicio().getDayOfWeek().equals(dto.getDia().getDayOfWeek())) {
-            throw new BusinessException("La fecha no coincide con el día de la semana especificado");
-        }
-
-        ubicacionService.validarDisponibilidad(
-                dto.getUbicacionId(),
-                dto.getFechaInicio(),
-                dto.getHoraInicio(),
-                dto.getHoraFin()
-        );
 
         Instructor instructor = instructorRepository.findById(dto.getInstructorId())
-                .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
+                .orElseThrow(() -> new BusinessException("Instructor no encontrado o inactivo"));
 
-        if (!instructor.getUsuario().isActivo()) {
-            throw new BusinessException("El instructor está inactivo");
+        Set<HorarioActividad> horariosEspecificos = new HashSet<>();
+        for (ActividadCreateDto.HorarioActividadDto horarioDto : dto.getHorarios()) {
+            HorarioUbicacion horarioBase = ubicacion.getHorarios().stream()
+                    .filter(h -> h.getId().equals(horarioDto.getHorarioUbicacionId()))
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException(
+                            "Horario base no encontrado en la ubicación"));
+
+            validarHorarioEspecifico(horarioDto, horarioBase);
+            validarSolapamientos(horarioBase, horarioDto, dto, null);
+
+            HorarioActividad horarioActividad = new HorarioActividad();
+            horarioActividad.setHorarioBase(horarioBase);
+            horarioActividad.setHoraInicio(horarioDto.getHoraInicio());
+            horarioActividad.setHoraFin(horarioDto.getHoraFin());
+            horarioActividad.setActividad(null);
+
+            horariosEspecificos.add(horarioActividad);
         }
-
-        validarSolapamiento(dto, null);
 
         Actividad actividad = new Actividad();
         actividad.setNombre(dto.getNombre());
-        actividad.setUbicacion(ubicacion);
         actividad.setFechaInicio(dto.getFechaInicio());
         actividad.setFechaFin(dto.getFechaFin());
-        actividad.setHoraInicio(dto.getHoraInicio());
-        actividad.setHoraFin(dto.getHoraFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
+        actividad.setUbicacion(ubicacion);
         actividad.setInstructor(instructor);
+
+        horariosEspecificos.forEach(h -> h.setActividad(actividad));
+        actividad.setHorariosEspecificos(horariosEspecificos);
+
+        if (dto.getMaxEstudiantes() > ubicacion.getCapacidad() * 0.9) {
+            actividad.addWarning("La actividad está al 90% o más de la capacidad de la ubicación");
+        }
+
+        Actividad actividadGuardada = actividadRepository.save(actividad);
 
         auditoriaService.registrarAccion(
                 emailUsuario,
                 TipoAccion.CREACION,
                 "Actividad creada: " + actividad.getNombre(),
-                actividad.getId()
+                actividadGuardada.getId()
         );
 
-        return actividadRepository.save(actividad);
+        return actividadGuardada;
+    }
+
+    private void validarHorarioEspecifico(ActividadCreateDto.HorarioActividadDto horarioDto,
+                                          HorarioUbicacion horarioBase) {
+        if (horarioDto.getHoraInicio().isBefore(horarioBase.getHoraInicio())) {
+            throw new BusinessException(String.format(
+                    "La hora de inicio (%s) debe ser después del inicio del horario base (%s)",
+                    horarioDto.getHoraInicio(), horarioBase.getHoraInicio()));
+        }
+
+        if (horarioDto.getHoraFin().isAfter(horarioBase.getHoraFin())) {
+            throw new BusinessException(String.format(
+                    "La hora de fin (%s) debe ser antes del fin del horario base (%s)",
+                    horarioDto.getHoraFin(), horarioBase.getHoraFin()));
+        }
+
+        if (Duration.between(horarioDto.getHoraInicio(), horarioDto.getHoraFin()).toMinutes() < 30) {
+            throw new BusinessException("La duración mínima de una actividad es de 30 minutos");
+        }
+    }
+
+    private void validarSolapamientos(HorarioUbicacion horarioBase,
+                                      ActividadCreateDto.HorarioActividadDto horarioDto,
+                                      ActividadCreateDto dto, Long actividadIdExcluir) {
+        if (dto.getFechaInicio().isBefore(LocalDate.now())) {
+            throw new BusinessException("No se pueden crear actividades en fechas pasadas");
+        }
+
+        if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
+            throw new BusinessException("La fecha de fin no puede ser anterior a la fecha de inicio");
+        }
+
+        boolean existeSolapamiento = actividadRepository.existsSolapamiento(
+                horarioBase.getUbicacion().getId(),
+                horarioDto.getHoraInicio(),
+                horarioDto.getHoraFin(),
+                dto.getFechaInicio(),
+                dto.getFechaFin(),
+                actividadIdExcluir);
+
+        if (existeSolapamiento) {
+            throw new BusinessException("El horario seleccionado ya está ocupado por otra actividad");
+        }
+
+        boolean instructorOcupado = actividadRepository.existsSolapamientoInstructor(
+                dto.getInstructorId(),
+                horarioDto.getHoraInicio(),
+                horarioDto.getHoraFin(),
+                dto.getFechaInicio(),
+                dto.getFechaFin(),
+                actividadIdExcluir);
+
+        if (instructorOcupado) {
+            throw new BusinessException("El instructor ya tiene una actividad programada en ese horario");
+        }
     }
 
     @Transactional
     public Actividad editarActividad(Long id, ActividadCreateDto dto, String emailUsuario) {
         Actividad actividad = actividadRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Actividad no encontrada con id: "+id));
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
 
-        Ubicacion ubicacion = ubicacionRepository.findById(dto.getUbicacionId())
-                .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
+        if (!actividad.getHorarioUbicacion().getId().equals(dto.getHorarios().get(0).getHorarioUbicacionId())) {
+            throw new BusinessException("No se puede cambiar el horario de una actividad existente");
+        }
 
-        validarSolapamiento(dto, id); // Validar solapamiento excluyendo esta actividad
+        if (dto.getFechaInicio().isBefore(LocalDate.now())) {
+            throw new BusinessException("No se puede mover la actividad al pasado");
+        }
 
-        ubicacionService.validarDisponibilidad(
-                dto.getUbicacionId(),
-                dto.getFechaInicio(),
-                dto.getHoraInicio(),
-                dto.getHoraFin()
-        );
+        if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
+            throw new BusinessException("La fecha de fin debe ser posterior a la de inicio");
+        }
 
         actividad.setNombre(dto.getNombre());
-        actividad.setUbicacion(ubicacion); // Usar la ubicación obtenida
         actividad.setFechaInicio(dto.getFechaInicio());
         actividad.setFechaFin(dto.getFechaFin());
-        actividad.setHoraInicio(dto.getHoraInicio());
-        actividad.setHoraFin(dto.getHoraFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
 
-        if(!actividad.getInstructor().getId().equals(dto.getInstructorId())) {
+        if (!actividad.getInstructor().getId().equals(dto.getInstructorId())) {
             Instructor nuevoInstructor = instructorRepository.findById(dto.getInstructorId())
                     .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
             actividad.setInstructor(nuevoInstructor);
         }
 
-        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
-                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
-
         auditoriaService.registrarAccion(
-                usuario.getEmail(),
+                emailUsuario,
                 TipoAccion.ACTUALIZACION,
                 "Actividad actualizada: " + actividad.getNombre(),
                 actividad.getId()
@@ -170,49 +221,54 @@ public class ActividadService {
     @Transactional
     public void eliminarActividad(Long id, String emailUsuario) {
         Actividad actividad = actividadRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Actividad no encontrada con id: " + id));
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
 
+        LocalDate hoy = LocalDate.now();
+        if (actividad.getFechaInicio().isBefore(hoy) ||
+                (actividad.getFechaInicio().isEqual(hoy) &&
+                        actividad.getHorarioUbicacion().getHoraInicio().isBefore(LocalTime.now()))) {
+            throw new BusinessException("No se puede eliminar una actividad que ya ha comenzado");
+        }
+
+        /*
         if (!actividad.getInscripciones().isEmpty()) {
             throw new BusinessException("No se puede eliminar una actividad con estudiantes inscritos");
-        }
+        }*/
+
+        /*if (actividad.getInscripciones().stream()
+                .anyMatch(i -> !i.getAsistencias().isEmpty())) {
+            throw new BusinessException("No se puede eliminar una actividad con asistencias registradas");
+        }*/
+
+        auditoriaService.eliminarRegistrosPorActividad(id);
+
+        actividadRepository.delete(actividad);
 
         auditoriaService.registrarAccion(
                 emailUsuario,
-                TipoAccion.valueOf("ELIMINACION"),
+                TipoAccion.ELIMINACION,
                 "Actividad eliminada: " + actividad.getNombre(),
-                actividad.getId()
+                null
         );
-
-        actividadRepository.delete(actividad);
     }
 
-
-    public boolean existeSolapamientoHorario(Long instructorId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin, Long actividadIdExcluir) {
+    public boolean existeSolapamientoHorario(Long instructorId, LocalDate fecha,
+                                             LocalTime horaInicio, LocalTime horaFin,
+                                             Long actividadIdExcluir) {
         return actividadRepository.existsByInstructorIdAndFechaInicioAndHoraInicioLessThanAndHoraFinGreaterThanAndIdNot(
                 instructorId, fecha, horaFin, horaInicio, actividadIdExcluir);
     }
 
-    private void validarSolapamiento(ActividadCreateDto dto, Long actividadIdExcluir) {
-        if (actividadRepository.existsSolapamientoHorarioExcluyendoActividad(
-                dto.getInstructorId(),
-                dto.getFechaInicio(),
-                dto.getHoraInicio(),
-                dto.getHoraFin(),
-                actividadIdExcluir)) {
-            throw new BusinessException("El instructor ya tiene una actividad en este horario");
-        }
-
-        if (ubicacionRepository.estaOcupada(
-                dto.getUbicacionId(),
-                dto.getFechaInicio(),
-                dto.getHoraInicio(),
-                dto.getHoraFin())) {
-            throw new BusinessException("La ubicación ya está reservada en este horario");
-        }
-    }
-
     public Actividad findById(Long id) {
-        return actividadRepository.findById(1L)
-                .orElseThrow(()-> new BusinessException("Actividad no encontrada con id: "+id));
+        Actividad actividad = actividadRepository.findByIdWithHorarios(id)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+
+        if (actividad.getHorarioUbicacion() == null && !actividad.getHorarios().isEmpty()) {
+            actividad.setHorarioUbicacion(actividad.getHorarios().iterator().next());
+        }
+
+        return actividad;
     }
+
+
 }
