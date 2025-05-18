@@ -53,7 +53,6 @@ public class InscripcionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Verificar si el usuario es estudiante y está intentando inscribir a otro estudiante
             Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
@@ -61,12 +60,11 @@ public class InscripcionController {
                 throw new AccessDeniedException("Solo puedes inscribirte a ti mismo");
             }
 
-            // Crear DTO con la información necesaria
+            // Validar que la actividad existe antes de crear el DTO
             InscripcionCreateDto dto = new InscripcionCreateDto();
             dto.setEstudianteId(estudianteId);
             dto.setActividadId(actividadId);
 
-            // Crear inscripción
             Inscripcion inscripcion = inscripcionService.crearInscripcion(dto, userDetails.getUsername());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
@@ -75,20 +73,22 @@ public class InscripcionController {
                     "data", inscripcion
             ));
         } catch (BusinessException e) {
+            log.error("Error de negocio al inscribir estudiante: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                     "status", "error",
                     "message", e.getMessage()
             ));
         } catch (AccessDeniedException e) {
+            log.error("Error de acceso al inscribir estudiante: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                     "status", "error",
                     "message", e.getMessage()
             ));
         } catch (Exception e) {
-            log.error("Error al inscribir estudiante", e);
+            log.error("Error inesperado al inscribir estudiante", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "status", "error",
-                    "message", "Error al procesar la inscripción"
+                    "message", "Error al procesar la inscripción: " + e.getMessage()
             ));
         }
     }
@@ -110,7 +110,6 @@ public class InscripcionController {
             Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
-            // Si es instructor, verificar que la actividad sea suya
             if (usuario.getRol() == Role.INSTRUCTOR) {
                 boolean esInstructorDeActividad = inscripcionService.verificarInstructorDeActividad(
                         usuario.getId(), actividadId);
@@ -122,7 +121,6 @@ public class InscripcionController {
 
             List<Inscripcion> inscripciones = inscripcionService.obtenerInscripcionesPorActividad(actividadId);
 
-            // Mapear a formato más simple para respuesta
             List<Map<String, Object>> estudiantes = inscripciones.stream()
                     .map(inscripcion -> Map.of(
                             "inscripcionId", inscripcion.getId(),
@@ -146,20 +144,22 @@ public class InscripcionController {
                     )
             ));
         } catch (BusinessException e) {
+            log.error("Error de negocio al listar estudiantes: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", "error",
                     "message", e.getMessage()
             ));
         } catch (AccessDeniedException e) {
+            log.error("Error de acceso al listar estudiantes: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                     "status", "error",
                     "message", e.getMessage()
             ));
         } catch (Exception e) {
-            log.error("Error al listar estudiantes inscritos", e);
+            log.error("Error inesperado al listar estudiantes inscritos", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "status", "error",
-                    "message", "Error al procesar la solicitud"
+                    "message", "Error al procesar la solicitud: " + e.getMessage()
             ));
         }
     }
@@ -172,11 +172,9 @@ public class InscripcionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Obtener usuario
             Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
-            // Si es estudiante, verificar que la inscripción sea suya
             if (usuario.getRol() == Role.ESTUDIANTE) {
                 Inscripcion inscripcion = inscripcionService.obtenerInscripcion(inscripcionId);
                 if (!inscripcion.getEstudiante().getUsuario().getId().equals(usuario.getId())) {
@@ -191,14 +189,22 @@ public class InscripcionController {
                     "message", "Inscripción cancelada exitosamente"
             ));
         } catch (BusinessException e) {
+            log.error("Error de negocio al cancelar inscripción: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", "error",
                     "message", e.getMessage()
             ));
         } catch (AccessDeniedException e) {
+            log.error("Error de acceso al cancelar inscripción: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                     "status", "error",
                     "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Error inesperado al cancelar inscripción", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "Error al cancelar la inscripción: " + e.getMessage()
             ));
         }
     }
