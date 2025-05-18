@@ -180,19 +180,16 @@ public class ActividadService {
         Actividad actividad = actividadRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
 
-        // Validación de inscripciones (comentada por ahora)
-        /*if (!actividad.getInscripciones().isEmpty()) {
-            throw new BusinessException("No se puede eliminar una actividad con estudiantes inscritos");
-        }*/
+        auditoriaService.eliminarRegistrosPorActividad(id);
+
+        actividadRepository.delete(actividad);
 
         auditoriaService.registrarAccion(
                 emailUsuario,
                 TipoAccion.ELIMINACION,
                 "Actividad eliminada: " + actividad.getNombre(),
-                actividad.getId()
+                null
         );
-
-        actividadRepository.delete(actividad);
     }
 
     public boolean existeSolapamientoHorario(Long instructorId, LocalDate fecha,
@@ -212,4 +209,6 @@ public class ActividadService {
 
         return actividad;
     }
+
+
 }
