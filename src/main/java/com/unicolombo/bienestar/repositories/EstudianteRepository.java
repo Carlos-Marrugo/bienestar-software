@@ -28,7 +28,6 @@ public interface EstudianteRepository extends JpaRepository<Estudiante, Long> {
     List<Estudiante> findAllActivos();
 
 
-    //sql para filtrar por estado
     @Query("SELECT e FROM Estudiante e WHERE e.estado = :estado")
     Page<Estudiante> findByEstado(@Param("estado") EstadoEstudiante estado, Pageable pageable);
 
@@ -42,6 +41,5 @@ public interface EstudianteRepository extends JpaRepository<Estudiante, Long> {
             Pageable pageable
     );
 
-    @Query("SELECT DISTINCT e FROM Estudiante e JOIN e.inscripciones i WHERE i.actividad.instructor.id = :instructorId")
-    Page<Estudiante> findByInscripcionesActividadInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
+
 }

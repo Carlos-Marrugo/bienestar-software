@@ -1,8 +1,11 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -12,6 +15,9 @@ import java.util.Set;
 
 @Entity
 @Table(name = "actividad")
+@Getter
+@Setter
+@ToString(exclude = {"horarios", "horariosEspecificos"}) // Evita recursión en toString()
 public class Actividad {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,6 +27,7 @@ public class Actividad {
 
     @ManyToOne
     @JoinColumn(name = "horario_ubicacion_id")
+    @JsonIgnoreProperties({"actividades", "horariosEspecificos"})
     private HorarioUbicacion horarioUbicacion;
 
     @ManyToOne
@@ -33,6 +40,7 @@ public class Actividad {
 
     @ManyToOne
     @JoinColumn(name = "instructor_id")
+    @JsonIgnoreProperties({"usuario", "actividades"})
     private Instructor instructor;
 
     @ManyToMany
@@ -41,32 +49,38 @@ public class Actividad {
             joinColumns = @JoinColumn(name = "actividad_id"),
             inverseJoinColumns = @JoinColumn(name = "horario_id")
     )
+    @JsonIgnoreProperties({"ubicacion", "actividades"})
     private Set<HorarioUbicacion> horarios = new HashSet<>();
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"actividad", "horarioBase"})
+    private Set<HorarioActividad> horariosEspecificos = new HashSet<>();
 
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
+    @Transient
+    @JsonIgnore
+    private List<String> warnings = new ArrayList<>();
 
-    public HorarioUbicacion getHorarioUbicacion() { return horarioUbicacion; }
-    public void setHorarioUbicacion(HorarioUbicacion horarioUbicacion) { this.horarioUbicacion = horarioUbicacion; }
+    public void addWarning(String warning) {
+        if (this.warnings == null) {
+            this.warnings = new ArrayList<>();
+        }
+        this.warnings.add(warning);
+    }
 
-    public Ubicacion getUbicacion() { return ubicacion; }
-    public void setUbicacion(Ubicacion ubicacion) { this.ubicacion = ubicacion; }
+    public List<String> getWarnings() {
+        return warnings != null ? warnings : new ArrayList<>();
+    }
 
-    public LocalDate getFechaInicio() { return fechaInicio; }
-    public void setFechaInicio(LocalDate fechaInicio) { this.fechaInicio = fechaInicio; }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Actividad actividad = (Actividad) o;
+        return id != null && id.equals(actividad.id);
+    }
 
-    public LocalDate getFechaFin() { return fechaFin; }
-    public void setFechaFin(LocalDate fechaFin) { this.fechaFin = fechaFin; }
-
-    public Integer getMaxEstudiantes() { return maxEstudiantes; }
-    public void setMaxEstudiantes(Integer maxEstudiantes) { this.maxEstudiantes = maxEstudiantes; }
-
-    public Instructor getInstructor() { return instructor; }
-    public void setInstructor(Instructor instructor) { this.instructor = instructor; }
-
-    public Set<HorarioUbicacion> getHorarios() { return horarios; }
-    public void setHorarios(Set<HorarioUbicacion> horarios) { this.horarios = horarios; }
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

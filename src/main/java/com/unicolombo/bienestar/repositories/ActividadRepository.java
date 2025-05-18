@@ -20,7 +20,7 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
 
     @Query("SELECT a FROM Actividad a " +
             "LEFT JOIN FETCH a.horarioUbicacion h " +
-            "LEFT JOIN FETCH h.ubicacion " +  // Cambiado para cargar la ubicación desde el horario
+            "LEFT JOIN FETCH h.ubicacion " +
             "LEFT JOIN FETCH a.instructor i " +
             "LEFT JOIN FETCH i.usuario " +
             "WHERE LOWER(a.nombre) LIKE LOWER(concat('%', :filtro,'%'))")
@@ -137,19 +137,21 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
     Optional<Actividad> findByIdWithHorarios(@Param("id") Long id);
 
     @Query("""
-SELECT COUNT(a) > 0 FROM Actividad a 
-JOIN a.horarios h 
-WHERE h.id = :horarioId
-AND (
-    (a.fechaInicio BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaInicio))
-    OR (a.fechaFin IS NOT NULL AND a.fechaFin BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaFin))
-    OR (:fechaInicio BETWEEN a.fechaInicio AND COALESCE(a.fechaFin, a.fechaInicio))
-)
-AND ((:horaInicio < a.horarioUbicacion.horaFin AND :horaFin > a.horarioUbicacion.horaInicio))
-AND (:actividadIdExcluir IS NULL OR a.id != :actividadIdExcluir)
-""")
+    SELECT COUNT(a) > 0 FROM Actividad a
+    JOIN a.horariosEspecificos h
+    WHERE h.horarioBase.ubicacion.id = :ubicacionId
+    AND (
+        (a.fechaInicio BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaInicio))
+        OR (a.fechaFin IS NOT NULL AND a.fechaFin BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaFin))
+        OR (:fechaInicio BETWEEN a.fechaInicio AND COALESCE(a.fechaFin, a.fechaInicio))
+    )
+    AND (
+        (:horaInicio < h.horaFin AND :horaFin > h.horaInicio)
+    )
+    AND (:actividadIdExcluir IS NULL OR a.id != :actividadIdExcluir)
+    """)
     boolean existsSolapamiento(
-            @Param("horarioId") Long horarioId,
+            @Param("ubicacionId") Long ubicacionId,
             @Param("horaInicio") LocalTime horaInicio,
             @Param("horaFin") LocalTime horaFin,
             @Param("fechaInicio") LocalDate fechaInicio,
@@ -189,4 +191,26 @@ AND (:actividadIdExcluir IS NULL OR a.id != :actividadIdExcluir)
             @Param("dia") DiaSemana dia,
             @Param("horaInicio") LocalTime horaInicio,
             @Param("horaFin") LocalTime horaFin);
+
+    @Query("""
+    SELECT COUNT(a) > 0 FROM Actividad a
+    JOIN a.horariosEspecificos h
+    WHERE a.instructor.id = :instructorId
+    AND (
+        (a.fechaInicio BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaInicio))
+        OR (a.fechaFin IS NOT NULL AND a.fechaFin BETWEEN :fechaInicio AND COALESCE(:fechaFin, a.fechaFin))
+        OR (:fechaInicio BETWEEN a.fechaInicio AND COALESCE(a.fechaFin, a.fechaInicio))
+    )
+    AND (
+        (:horaInicio < h.horaFin AND :horaFin > h.horaInicio)
+    )
+    AND (:actividadIdExcluir IS NULL OR a.id != :actividadIdExcluir)
+    """)
+    boolean existsSolapamientoInstructor(
+            @Param("instructorId") Long instructorId,
+            @Param("horaInicio") LocalTime horaInicio,
+            @Param("horaFin") LocalTime horaFin,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin") LocalDate fechaFin,
+            @Param("actividadIdExcluir") Long actividadIdExcluir);
 }

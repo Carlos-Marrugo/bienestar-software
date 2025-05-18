@@ -1,44 +1,45 @@
 package com.unicolombo.bienestar.dto;
 
-import com.unicolombo.bienestar.models.DiaSemana;
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
 public class ActividadCreateDto {
-    @NotBlank(message = "El nombre es requerido")
+    @NotBlank(message = "El nombre es obligatorio")
+    @Size(max = 100, message = "El nombre no puede exceder los 100 caracteres")
     private String nombre;
 
-    @NotNull(message = "La ubicación es requerida")
-    private Long ubicacionId;
-
-    @NotNull(message = "La fecha de inicio es requerida")
+    @NotNull(message = "La fecha de inicio es obligatoria")
+    @FutureOrPresent(message = "La fecha de inicio debe ser hoy o en el futuro")
     private LocalDate fechaInicio;
+
+    @FutureOrPresent(message = "La fecha de fin debe ser hoy o en el futuro")
     private LocalDate fechaFin;
 
+    @NotNull(message = "La capacidad máxima es obligatoria")
     @Min(value = 5, message = "La capacidad mínima es de 5 estudiantes")
-    @NotNull(message = "La capacidad es requerida")
     private Integer maxEstudiantes;
 
-    @NotNull(message = "El instructor es requerido")
+    @NotNull(message = "El ID de la ubicación es obligatorio")
+    private Long ubicacionId;
+
+    @NotNull(message = "El ID del instructor es obligatorio")
     private Long instructorId;
 
-    @NotEmpty(message = "Debe seleccionar al menos un horario")
+    @NotEmpty(message = "Debe incluir al menos un horario")
     private List<HorarioActividadDto> horarios;
 
     public static class HorarioActividadDto {
-        @NotNull(message = "El ID del horario es requerido")
+        @NotNull(message = "El ID del horario base es obligatorio")
         private Long horarioUbicacionId;
 
-        @NotNull(message = "La hora de inicio es requerida")
+        @NotNull(message = "La hora de inicio es obligatoria")
         private LocalTime horaInicio;
 
-        @NotNull(message = "La hora de fin es requerida")
+        @NotNull(message = "La hora de fin es obligatoria")
         private LocalTime horaFin;
 
         public Long getHorarioUbicacionId() {
@@ -66,9 +67,37 @@ public class ActividadCreateDto {
         }
     }
 
+    public String getNombre() {
+        return nombre;
+    }
 
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public LocalDate getFechaInicio() {
+        return fechaInicio;
+    }
+
+    public void setFechaInicio(LocalDate fechaInicio) {
+        this.fechaInicio = fechaInicio;
+    }
+
+    public LocalDate getFechaFin() {
+        return fechaFin;
+    }
+
+    public void setFechaFin(LocalDate fechaFin) {
+        this.fechaFin = fechaFin;
+    }
+
+    public Integer getMaxEstudiantes() {
+        return maxEstudiantes;
+    }
+
+    public void setMaxEstudiantes(Integer maxEstudiantes) {
+        this.maxEstudiantes = maxEstudiantes;
+    }
 
     public Long getUbicacionId() {
         return ubicacionId;
@@ -78,6 +107,14 @@ public class ActividadCreateDto {
         this.ubicacionId = ubicacionId;
     }
 
+    public Long getInstructorId() {
+        return instructorId;
+    }
+
+    public void setInstructorId(Long instructorId) {
+        this.instructorId = instructorId;
+    }
+
     public List<HorarioActividadDto> getHorarios() {
         return horarios;
     }
@@ -85,16 +122,4 @@ public class ActividadCreateDto {
     public void setHorarios(List<HorarioActividadDto> horarios) {
         this.horarios = horarios;
     }
-
-    public LocalDate getFechaInicio() { return fechaInicio; }
-    public void setFechaInicio(LocalDate fechaInicio) { this.fechaInicio = fechaInicio; }
-
-    public LocalDate getFechaFin() { return fechaFin; }
-    public void setFechaFin(LocalDate fechaFin) { this.fechaFin = fechaFin; }
-
-    public Integer getMaxEstudiantes() { return maxEstudiantes; }
-    public void setMaxEstudiantes(Integer maxEstudiantes) { this.maxEstudiantes = maxEstudiantes; }
-
-    public Long getInstructorId() { return instructorId; }
-    public void setInstructorId(Long instructorId) { this.instructorId = instructorId; }
 }
