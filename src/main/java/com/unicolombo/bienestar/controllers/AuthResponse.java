@@ -1,15 +1,42 @@
 package com.unicolombo.bienestar.controllers;
 
+import com.unicolombo.bienestar.models.Usuario;
+
 public class AuthResponse {
+    private Long estudianteId;
+    private Long instructorId;
     private String token;
-    private String message;
-    private String usuario;
+    private String refreshToken;
+    private Usuario usuario;
 
-
-    public AuthResponse(String token, String message, String usuario) {
+    public AuthResponse(Long estudianteId, String token, String refreshToken, Usuario usuario) {
+        this.estudianteId = estudianteId;
         this.token = token;
-        this.message = message;
+        this.refreshToken = refreshToken;
         this.usuario = usuario;
+    }
+
+    public AuthResponse(String token, String refreshToken, Usuario usuario, Long instructorId) {
+        this.instructorId = instructorId;
+        this.token = token;
+        this.refreshToken = refreshToken;
+        this.usuario = usuario;
+    }
+
+    public Long getEstudianteId() {
+        return estudianteId;
+    }
+
+    public void setEstudianteId(Long estudianteId) {
+        this.estudianteId = estudianteId;
+    }
+
+    public Long getInstructorId() {
+        return instructorId;
+    }
+
+    public void setInstructorId(Long instructorId) {
+        this.instructorId = instructorId;
     }
 
     public String getToken() {
@@ -20,19 +47,19 @@ public class AuthResponse {
         this.token = token;
     }
 
-    public String getMessage() {
-        return message;
+    public String getRefreshToken() {
+        return refreshToken;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 
-    public String getUsuario() {
+    public Usuario getUsuario() {
         return usuario;
     }
 
-    public void setUsuario(String usuario) {
+    public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
     }
 }
