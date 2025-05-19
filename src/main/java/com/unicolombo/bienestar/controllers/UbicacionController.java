@@ -213,4 +213,35 @@ public class UbicacionController {
         }
     }
 
+
+    @PatchMapping("/{id}/agregar-horarios")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Agregar nuevos horarios a una ubicación existente")
+    public ResponseEntity<?> agregarHorarios(
+            @PathVariable Long id,
+            @Valid @RequestBody List<HorarioUbicacionDto> horariosDto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Ubicacion ubicacion = ubicacionService.agregarHorarios(id, horariosDto, userDetails.getUsername());
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Horarios agregados correctamente",
+                    "data", Map.of(
+                            "id", ubicacion.getId(),
+                            "nombre", ubicacion.getNombre(),
+                            "horariosAgregados", horariosDto.size(),
+                            "totalHorarios", ubicacion.getHorarios().size()
+                    )
+            ));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage(),
+                            "conflictos", e.getData() != null ? e.getData() : Collections.emptyList()
+                    ));
+        }
+    }
+
 }

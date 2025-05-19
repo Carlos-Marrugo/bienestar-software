@@ -17,10 +17,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -425,6 +422,117 @@ public class UbicacionService {
         return ubicacionRepository.save(ubicacion);
     }
 
+    @Transactional
+    @CacheEvict(value = {"ubicaciones", "ubicacionesActivas", "ubicacionesConHorarios"}, allEntries = true)
+    public Ubicacion agregarHorarios(Long id, List<HorarioUbicacionDto> nuevosHorariosDto, String emailAdmin) {
+        Ubicacion ubicacion = ubicacionRepository.findByIdWithHorarios(id)
+                .orElseThrow(() -> new BusinessException("Ubicación no encontrada", HttpStatus.NOT_FOUND));
 
+        validarListaHorariosVacia(nuevosHorariosDto);
+        validarDuplicadosEnRequest(nuevosHorariosDto);
+        validarSolapamientos(ubicacion, nuevosHorariosDto);
+        validarHorariosConActividades(ubicacion);
+
+        agregarNuevosHorarios(ubicacion, nuevosHorariosDto);
+
+        registrarAuditoria(emailAdmin, ubicacion, nuevosHorariosDto.size());
+
+        return ubicacionRepository.save(ubicacion);
+    }
+
+    private void validarListaHorariosVacia(List<HorarioUbicacionDto> horarios) {
+        if (horarios == null || horarios.isEmpty()) {
+            throw new BusinessException("Debe proporcionar al menos un horario", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void validarDuplicadosEnRequest(List<HorarioUbicacionDto> horarios) {
+        Set<String> horariosUnicos = new HashSet<>();
+        for (HorarioUbicacionDto dto : horarios) {
+            String clave = String.format("%s-%s-%s",
+                    dto.getDia().name(),
+                    dto.getHoraInicio().toString(),
+                    dto.getHoraFin().toString());
+
+            if (!horariosUnicos.add(clave)) {
+                throw new BusinessException("Hay horarios duplicados en la solicitud", HttpStatus.BAD_REQUEST);
+            }
+        }
+    }
+
+    private void validarSolapamientos(Ubicacion ubicacion, List<HorarioUbicacionDto> nuevosHorarios) {
+        nuevosHorarios.forEach(nuevo -> {
+            boolean solapado = ubicacion.getHorarios().stream()
+                    .anyMatch(existente ->
+                            existente.getDia() == nuevo.getDia() &&
+                                    nuevo.getHoraInicio().isBefore(existente.getHoraFin()) &&
+                                    nuevo.getHoraFin().isAfter(existente.getHoraInicio())
+                    );
+
+
+            if (solapado) {
+                throw new BusinessException(
+                        String.format("El horario para %s (%s-%s) se solapa con uno existente",
+                                nuevo.getDia(), nuevo.getHoraInicio(), nuevo.getHoraFin()),
+                        HttpStatus.CONFLICT
+                );
+            }
+        });
+    }
+
+    private void validarHorariosConActividades(Ubicacion ubicacion) {
+        List<HorarioUbicacion> horariosConActividades = ubicacion.getHorarios().stream()
+                .filter(h -> !h.getActividades().isEmpty())
+                .toList();
+
+        if (!horariosConActividades.isEmpty()) {
+            List<Map<String, Object>> conflictos = horariosConActividades.stream()
+                    .map(h -> {
+                        Map<String, Object> conflicto = new HashMap<>();
+                        conflicto.put("horarioId", h.getId());
+                        conflicto.put("actividades", h.getActividades().stream()
+                                .map(a -> Map.of("id", a.getId(), "nombre", a.getNombre()))
+                                .collect(Collectors.toList()));
+                        return conflicto;
+                    })
+                    .collect(Collectors.toList());
+
+            throw new BusinessException(
+                    "No se pueden agregar horarios mientras existan actividades programadas",
+                    conflictos,
+                    HttpStatus.CONFLICT
+            );
+        }
+    }
+
+    private void agregarNuevosHorarios(Ubicacion ubicacion, List<HorarioUbicacionDto> nuevosHorariosDto) {
+        nuevosHorariosDto.forEach(dto -> {
+            if (ubicacion.getHorarios().stream().noneMatch(h ->
+                    h.getDia() == dto.getDia() &&
+                            h.getHoraInicio().equals(dto.getHoraInicio()) &&
+                            h.getHoraFin().equals(dto.getHoraFin()))) {
+
+                HorarioUbicacion nuevoHorario = new HorarioUbicacion();
+                nuevoHorario.setDia(dto.getDia());
+                nuevoHorario.setHoraInicio(dto.getHoraInicio());
+                nuevoHorario.setHoraFin(dto.getHoraFin());
+                nuevoHorario.setFechaInicio(dto.getFechaInicio());
+                nuevoHorario.setFechaFin(dto.getFechaFin());
+                nuevoHorario.setUbicacion(ubicacion);
+                ubicacion.getHorarios().add(nuevoHorario);
+            }
+        });
+    }
+
+    private void registrarAuditoria(String emailAdmin, Ubicacion ubicacion, int cantidadHorarios) {
+        String detalle = String.format("Se agregaron %d horarios a la ubicación %s (ID: %d)",
+                cantidadHorarios, ubicacion.getNombre(), ubicacion.getId());
+        auditoriaService.registrarAccion(
+                emailAdmin,
+                TipoAccion.ACTUALIZACION,
+                detalle,
+                ubicacion.getId()
+        );
+    }
 
 }
