@@ -6,6 +6,7 @@ import com.unicolombo.bienestar.models.Inscripcion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -36,4 +37,8 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
     @Query("SELECT i FROM Inscripcion i JOIN FETCH i.estudiante e JOIN FETCH e.usuario " +
             "WHERE i.actividad.id = :actividadId ORDER BY e.codigoEstudiantil ASC")
     List<Inscripcion> findAllByActividadIdWithEstudiante(@Param("actividadId") Long actividadId);
+
+    @Query("SELECT i FROM Inscripcion i WHERE i.estudiante.id = :estudianteId AND i.actividad.id = :actividadId")
+    Optional<Inscripcion> findByEstudianteIdAndActividadId(@Param("estudianteId") Long estudianteId,
+                                                           @Param("actividadId") Long actividadId);
 }

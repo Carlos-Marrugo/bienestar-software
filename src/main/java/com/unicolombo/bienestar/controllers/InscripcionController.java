@@ -61,7 +61,6 @@ public class InscripcionController {
                 throw new AccessDeniedException("Solo puedes inscribirte a ti mismo");
             }
 
-            // Validar que la actividad existe antes de crear el DTO
             InscripcionCreateDto dto = new InscripcionCreateDto();
             dto.setEstudianteId(estudianteId);
             dto.setActividadId(actividadId);
@@ -131,7 +130,7 @@ public class InscripcionController {
                     .map(inscripcion -> {
                         Estudiante estudiante = inscripcion.getEstudiante();
                         return Map.of(
-                                "inscripcionId", inscripcion.getId(), // Usar el ID de inscripción, no de actividad
+                                "inscripcionId", inscripcion.getId(),
                                 "estudiante", Map.of(
                                         "id", estudiante.getId(),
                                         "nombre", estudiante.getNombreCompleto(),
@@ -148,7 +147,7 @@ public class InscripcionController {
                     "status", "success",
                     "data", estudiantes,
                     "meta", Map.of(
-                            "actividadId", actividadId, // Incluir el ID de la actividad en meta
+                            "actividadId", actividadId,
                             "total", estudiantes.size()
                     )
             ));

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -30,8 +31,7 @@ public class Inscripcion {
     @Column(name = "fecha_inscripcion", nullable = false)
     private LocalDate fechaInscripcion = LocalDate.now();
 
-    /*
     @OneToMany(mappedBy = "inscripcion", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("inscripcion")
-    private List<RegistroAsistencia> asistencias;*/
+    private List<Asistencia> asistencias = new ArrayList<>();
 }
