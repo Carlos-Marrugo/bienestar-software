@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.services;
 
+import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
 import com.unicolombo.bienestar.dto.RegistroInstructorDto;
 import com.unicolombo.bienestar.dto.InstructorUpdateDto;
 import com.unicolombo.bienestar.models.*;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -77,5 +79,24 @@ public class InstructorService {
 
     public Optional<Instructor> obtenerInstructorActivo(Long id) {
         return instructorRepository.findActiveById(id);
+    }
+
+
+    public List<Actividad> getActividadesAsignadasRaw(Long instructorId) {
+        Instructor instructor = instructorRepository.findByIdWithActividades(instructorId)
+                .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
+        return instructor.getActividades();
+    }
+
+    public List<ActividadInstructorDto> getActividadesAsignadasFormateadas(Long instructorId) {
+        List<Actividad> actividades = getActividadesAsignadasRaw(instructorId);
+        return actividades.stream()
+                .map(ActividadInstructorDto::new)
+                .collect(Collectors.toList());
+    }
+
+    public Long getInstructorIdByEmail(String email) throws BusinessException {
+        return instructorRepository.findIdByUsuarioEmail(email)
+                .orElseThrow(() -> new BusinessException("No se encontró un instructor con ese email"));
     }
 }

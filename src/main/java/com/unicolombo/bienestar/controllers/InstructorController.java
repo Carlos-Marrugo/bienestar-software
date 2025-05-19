@@ -1,12 +1,16 @@
 package com.unicolombo.bienestar.controllers;
 
+import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
 import com.unicolombo.bienestar.dto.InstructorUpdateDto;
 import com.unicolombo.bienestar.dto.RegistrarHorasDto;
 import com.unicolombo.bienestar.dto.RegistroInstructorDto;
+import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Instructor;
+import com.unicolombo.bienestar.repositories.InstructorRepository;
 import com.unicolombo.bienestar.services.InscripcionService;
 import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.services.JwtService;
 import com.unicolombo.bienestar.utils.ResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -30,10 +34,18 @@ import java.util.Optional;
 @PreAuthorize("hasRole('ADMIN')")
 public class InstructorController {
 
-    private final InstructorService instructorService;
+    @Autowired
+    private InstructorService instructorService;
 
     @Autowired
     private InscripcionService inscripcionService;
+
+    @Autowired
+    private InstructorRepository instructorRepository;
+
+
+    @Autowired
+    private JwtService jwtService;
 
     @Autowired
     public InstructorController(InstructorService instructorService) {
@@ -114,4 +126,43 @@ public class InstructorController {
                     .body(ResponseWrapper.error(e.getMessage()));
         }
     }
+
+    @Operation(summary = "Obtener actividades de un instructor",
+            description = "Devuelve las actividades asignadas a un instructor específico (para administradores)")
+    @GetMapping("/instructores/{id}/actividades")
+    public ResponseEntity<?> getActividadesInstructor(@PathVariable Long id) {
+        try {
+            List<Actividad> actividades = instructorService.getActividadesAsignadasRaw(id);
+            return ResponseEntity.ok()
+                    .body(ResponseWrapper.success(actividades, "Actividades del instructor obtenidas"));
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest()
+                    .body(ResponseWrapper.error(e.getMessage()));
+        }
+    }
+
+    @Operation(summary = "Obtener mis actividades (para instructores)",
+            description = "Devuelve las actividades asignadas al instructor actual con sus horarios específicos")
+    @GetMapping("/mis-actividades")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> getMisActividades(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.substring(7); // Eliminar "Bearer "
+            String email = jwtService.extractUsername(token);
+            Long instructorId = instructorService.getInstructorIdByEmail(email);
+
+            List<ActividadInstructorDto> actividades = instructorService.getActividadesAsignadasFormateadas(instructorId);
+            return ResponseEntity.ok()
+                    .body(ResponseWrapper.success(actividades, "Mis actividades obtenidas"));
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest()
+                    .body(ResponseWrapper.error(e.getMessage()));
+        }
+    }
+
+    public Long getInstructorIdByEmail(String email) throws BusinessException {
+        return instructorRepository.findIdByUsuarioEmail(email)
+                .orElseThrow(() -> new BusinessException("No se encontró un instructor con ese email"));
+    }
+
 }
