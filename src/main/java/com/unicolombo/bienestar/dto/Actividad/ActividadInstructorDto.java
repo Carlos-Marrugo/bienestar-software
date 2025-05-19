@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.dto.Actividad;
 
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.HorarioActividad;
+import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
 import lombok.Data;
 
@@ -14,20 +15,35 @@ import java.util.stream.Collectors;
 public class ActividadInstructorDto {
     private Long id;
     private String nombre;
-    private Ubicacion ubicacion;
+    private UbicacionSimpleDto ubicacion;
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
     private Integer maxEstudiantes;
-    private List<HorarioDto> horariosAsignados;
+    private List<HorarioAsignadoDto> horariosAsignados;
 
     @Data
-    public static class HorarioDto {
+    public static class UbicacionSimpleDto {
         private Long id;
+        private String nombre;
+        private Integer capacidad;
+
+        public UbicacionSimpleDto(Ubicacion ubicacion) {
+            this.id = ubicacion.getId();
+            this.nombre = ubicacion.getNombre();
+            this.capacidad = ubicacion.getCapacidad();
+        }
+    }
+
+    @Data
+    public static class HorarioAsignadoDto {
+        private Long id;
+        private String dia;
         private LocalTime horaInicio;
         private LocalTime horaFin;
 
-        public HorarioDto(HorarioActividad horario) {
+        public HorarioAsignadoDto(HorarioActividad horario) {
             this.id = horario.getId();
+            this.dia = horario.getHorarioBase().getDia().toString();
             this.horaInicio = horario.getHoraInicio();
             this.horaFin = horario.getHoraFin();
         }
@@ -36,12 +52,12 @@ public class ActividadInstructorDto {
     public ActividadInstructorDto(Actividad actividad) {
         this.id = actividad.getId();
         this.nombre = actividad.getNombre();
-        this.ubicacion = actividad.getUbicacion();
+        this.ubicacion = new UbicacionSimpleDto(actividad.getUbicacion());
         this.fechaInicio = actividad.getFechaInicio();
         this.fechaFin = actividad.getFechaFin();
         this.maxEstudiantes = actividad.getMaxEstudiantes();
         this.horariosAsignados = actividad.getHorariosEspecificos().stream()
-                .map(HorarioDto::new)
+                .map(HorarioAsignadoDto::new)
                 .collect(Collectors.toList());
     }
 }

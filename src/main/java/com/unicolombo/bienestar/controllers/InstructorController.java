@@ -147,7 +147,7 @@ public class InstructorController {
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> getMisActividades(@RequestHeader("Authorization") String authHeader) {
         try {
-            String token = authHeader.substring(7); // Eliminar "Bearer "
+            String token = authHeader.substring(7);
             String email = jwtService.extractUsername(token);
             Long instructorId = instructorService.getInstructorIdByEmail(email);
 
