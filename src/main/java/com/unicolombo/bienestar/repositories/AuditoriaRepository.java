@@ -30,4 +30,7 @@ public interface AuditoriaRepository extends JpaRepository<AuditoriaActividad, L
     @Modifying
     @Query("DELETE FROM AuditoriaActividad a WHERE a.actividad.id = :actividadId")
     void deleteByActividadId(@Param("actividadId") Long actividadId);
+
+    @Query("SELECT COUNT(a) > 0 FROM Actividad a WHERE a.id = :actividadId")
+    boolean existsActividadById(@Param("actividadId") Long actividadId);
 }
