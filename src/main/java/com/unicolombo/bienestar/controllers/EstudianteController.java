@@ -3,13 +3,18 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.*;
 import com.unicolombo.bienestar.dto.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.EstadoEstudiante;
 import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.repositories.EstudianteRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
+import com.unicolombo.bienestar.services.ActividadService;
 import com.unicolombo.bienestar.services.EstudianteService;
 import com.unicolombo.bienestar.services.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,6 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -42,7 +48,13 @@ public class EstudianteController {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
+    private EstudianteRepository estudianteRepository;
+
+    @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private ActividadService actividadService;
 
     @PostMapping("/registro")
     @Operation(summary = "Registrar nuevo estudiante")
@@ -206,5 +218,39 @@ public class EstudianteController {
                         "size", estudiantes.getSize()
                 )
         ));
+    }
+
+    @Operation(summary = "Listar actividades disponibles",
+            description = "Permite a un estudiante ver las actividades disponibles para inscribirse")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+            @ApiResponse(responseCode = "403", description = "No autorizado")
+    })
+    @GetMapping("/actividades/disponibles")
+    @PreAuthorize("hasRole('ESTUDIANTE')")
+    public ResponseEntity<?> listarActividadesDisponibles(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        try {
+            Page<Actividad> actividades = actividadService.listarActividadesDisponibles(page, size);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "data", actividades.getContent(),
+                    "meta", Map.of(
+                            "total", actividades.getTotalElements(),
+                            "page", page,
+                            "size", size,
+                            "totalPages", actividades.getTotalPages()
+                    )
+            ));
+        } catch (Exception e) {
+//            log.error("Error al listar actividades disponibles", e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "status", "error",
+                    "message", "Error al listar actividades disponibles"
+            ));
+        }
     }
 }

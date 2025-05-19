@@ -270,5 +270,10 @@ public class ActividadService {
         return actividad;
     }
 
+    public Page<Actividad> listarActividadesDisponibles(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").ascending());
+        return actividadRepository.findActividadesDisponibles(pageable);
+    }
+
 
 }

@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,19 +28,34 @@ public class AuditoriaService {
 
     @Async
     public void registrarAccion(String emailUsuario, TipoAccion accion, String detalles) {
-        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
-                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
-        registrarAccion(usuario, accion, detalles);
+        try {
+            Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                    .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+            AuditoriaActividad registro = new AuditoriaActividad();
+            registro.setUsuario(usuario);
+            registro.setAccion(accion);
+            registro.setDetalles(detalles);
+            registro.setFecha(LocalDateTime.now());
+
+            auditoriaRepository.save(registro);
+        } catch (Exception e) {
+            log.error("Error registrando acción de auditoría sin actividad", e);
+        }
     }
 
     @Async
     public void registrarAccion(Usuario usuario, TipoAccion accion, String detalles) {
-        AuditoriaActividad registro = new AuditoriaActividad();
-        registro.setUsuario(usuario);
-        registro.setAccion(accion);
-        registro.setDetalles(detalles);
-        registro.setFecha(LocalDateTime.now());
-        auditoriaRepository.save(registro);
+        try {
+            AuditoriaActividad registro = new AuditoriaActividad();
+            registro.setUsuario(usuario);
+            registro.setAccion(accion);
+            registro.setDetalles(detalles);
+            registro.setFecha(LocalDateTime.now());
+            auditoriaRepository.save(registro);
+        } catch (Exception e) {
+            log.error("Error registrando acción de auditoría con usuario objeto", e);
+        }
     }
 
     @Async
@@ -56,15 +70,19 @@ public class AuditoriaService {
             registro.setDetalles(detalles);
             registro.setFecha(LocalDateTime.now());
 
-            if (actividadId != null) {
-                Actividad actividad = new Actividad();
-                actividad.setId(actividadId);
-                registro.setActividad(actividad);
+            if (actividadId != null && actividadId > 0) {
+                if (auditoriaRepository.existsActividadById(actividadId)) {
+                    Actividad actividad = new Actividad();
+                    actividad.setId(actividadId);
+                    registro.setActividad(actividad);
+                } else {
+                    log.warn("No se encontró actividad con ID {} para auditoría", actividadId);
+                }
             }
 
             auditoriaRepository.save(registro);
         } catch (Exception e) {
-            log.error("Error registrando acción de auditoría", e);
+            log.error("Error registrando acción de auditoría con actividad", e);
         }
     }
 
@@ -74,6 +92,11 @@ public class AuditoriaService {
 
     @Transactional
     public void eliminarRegistrosPorActividad(Long actividadId) {
-        auditoriaRepository.deleteByActividadId(actividadId);
+        try {
+            auditoriaRepository.deleteByActividadId(actividadId);
+        } catch (Exception e) {
+            log.error("Error eliminando registros de auditoría para actividad {}", actividadId, e);
+            throw new BusinessException("Error eliminando registros de auditoría");
+        }
     }
 }

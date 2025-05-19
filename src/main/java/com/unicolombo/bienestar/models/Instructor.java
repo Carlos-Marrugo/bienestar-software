@@ -36,4 +36,8 @@ public class Instructor {
         return usuario.getNombre() + " " + usuario.getApellido();
     }
 
+    @OneToMany(mappedBy = "instructor")
+    @JsonIgnoreProperties("instructor")
+    private List<Asistencia> asistenciasRegistradas = new ArrayList<>();
+
 }

@@ -1,20 +1,28 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.InstructorUpdateDto;
+import com.unicolombo.bienestar.dto.RegistrarHorasDto;
 import com.unicolombo.bienestar.dto.RegistroInstructorDto;
 import com.unicolombo.bienestar.models.Instructor;
+import com.unicolombo.bienestar.services.InscripcionService;
 import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.utils.ResponseWrapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -23,6 +31,9 @@ import java.util.Optional;
 public class InstructorController {
 
     private final InstructorService instructorService;
+
+    @Autowired
+    private InscripcionService inscripcionService;
 
     @Autowired
     public InstructorController(InstructorService instructorService) {
@@ -103,7 +114,4 @@ public class InstructorController {
                     .body(ResponseWrapper.error(e.getMessage()));
         }
     }
-
-
-
 }

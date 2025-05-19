@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.InscripcionCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Inscripcion;
 import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
@@ -60,7 +61,6 @@ public class InscripcionController {
                 throw new AccessDeniedException("Solo puedes inscribirte a ti mismo");
             }
 
-            // Validar que la actividad existe antes de crear el DTO
             InscripcionCreateDto dto = new InscripcionCreateDto();
             dto.setEstudianteId(estudianteId);
             dto.setActividadId(actividadId);
@@ -100,6 +100,7 @@ public class InscripcionController {
             @ApiResponse(responseCode = "403", description = "No autorizado"),
             @ApiResponse(responseCode = "404", description = "Actividad no encontrada")
     })
+
     @GetMapping("/instructores/actividades/{actividadId}/estudiantes")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<?> listarEstudiantesInscritos(
@@ -111,7 +112,6 @@ public class InscripcionController {
             Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
-            // Verificar que el instructor tiene permisos para ver esta actividad
             if (usuario.getRol() == Role.INSTRUCTOR) {
                 boolean esInstructorDeActividad = inscripcionService.verificarInstructorDeActividad(
                         usuario.getId(), actividadId);
@@ -127,25 +127,28 @@ public class InscripcionController {
             log.info("Encontradas {} inscripciones para la actividad {}", inscripciones.size(), actividadId);
 
             List<Map<String, Object>> estudiantes = inscripciones.stream()
-                    .map(inscripcion -> Map.of(
-                            "inscripcionId", inscripcion.getId(),
-                            "estudiante", Map.of(
-                                    "id", inscripcion.getEstudiante().getId(),
-                                    "nombre", inscripcion.getEstudiante().getNombreCompleto(),
-                                    "codigo", inscripcion.getEstudiante().getCodigoEstudiantil(),
-                                    "programa", inscripcion.getEstudiante().getProgramaAcademico(),
-                                    "fechaInscripcion", inscripcion.getFechaInscripcion(),
-                                    "horasRegistradas", inscripcion.getHorasRegistradas()
-                            )
-                    ))
+                    .map(inscripcion -> {
+                        Estudiante estudiante = inscripcion.getEstudiante();
+                        return Map.of(
+                                "inscripcionId", inscripcion.getId(),
+                                "estudiante", Map.of(
+                                        "id", estudiante.getId(),
+                                        "nombre", estudiante.getNombreCompleto(),
+                                        "codigo", estudiante.getCodigoEstudiantil(),
+                                        "programa", estudiante.getProgramaAcademico(),
+                                        "fechaInscripcion", inscripcion.getFechaInscripcion(),
+                                        "horasRegistradas", inscripcion.getHorasRegistradas()
+                                )
+                        );
+                    })
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(Map.of(
                     "status", "success",
                     "data", estudiantes,
                     "meta", Map.of(
-                            "total", estudiantes.size(),
-                            "actividadId", actividadId
+                            "actividadId", actividadId,
+                            "total", estudiantes.size()
                     )
             ));
         } catch (BusinessException e) {
