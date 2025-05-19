@@ -53,6 +53,9 @@
 
                             .requestMatchers(HttpMethod.GET, "/api/auditoria/**").hasRole("ADMIN")
 
+                            .requestMatchers(HttpMethod.PUT, "/api/admin/instructores/**").hasRole("ADMIN")
+                            .requestMatchers(HttpMethod.GET, "/api/admin/mi-perfil").hasRole("INSTRUCTOR")
+                            .requestMatchers(HttpMethod.PUT, "/api/admin/mi-perfil").hasRole("INSTRUCTOR")
                             .anyRequest().authenticated()
                     )
                     .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

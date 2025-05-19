@@ -1,9 +1,7 @@
 package com.unicolombo.bienestar.controllers;
 
+import com.unicolombo.bienestar.dto.*;
 import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
-import com.unicolombo.bienestar.dto.InstructorUpdateDto;
-import com.unicolombo.bienestar.dto.RegistrarHorasDto;
-import com.unicolombo.bienestar.dto.RegistroInstructorDto;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.repositories.InstructorRepository;
@@ -25,13 +23,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')")
 public class InstructorController {
 
     @Autowired
@@ -43,26 +42,19 @@ public class InstructorController {
     @Autowired
     private InstructorRepository instructorRepository;
 
-
     @Autowired
     private JwtService jwtService;
 
-    @Autowired
-    public InstructorController(InstructorService instructorService) {
-        this.instructorService = instructorService;
-    }
 
     @PostMapping("/agregar-instructor")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> registrarInstructor(
             @Valid @RequestBody RegistroInstructorDto dto,
             BindingResult result) {
 
         if (result.hasErrors()) {
-            String errorMessage = !result.getFieldErrors().isEmpty()
-                    ? result.getFieldErrors().get(0).getDefaultMessage()
-                    : "Error de validación";
             return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error(errorMessage, result));
+                    .body(ResponseWrapper.error(getFirstError(result), result));
         }
 
         try {
@@ -76,6 +68,7 @@ public class InstructorController {
     }
 
     @GetMapping("/instructores-activos")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> listarInstructores() {
         List<Instructor> instructores = instructorService.listarInstructoresActivos();
         return ResponseEntity.ok()
@@ -83,6 +76,7 @@ public class InstructorController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> obtenerInstructor(@PathVariable Long id) {
         Optional<Instructor> instructor = instructorService.obtenerInstructorActivo(id);
         return instructor.map(value -> ResponseEntity.ok()
@@ -92,21 +86,19 @@ public class InstructorController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarInstructor(
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> actualizarInstructorAdmin(
             @PathVariable Long id,
-            @Valid @RequestBody InstructorUpdateDto dto,
+            @Valid @RequestBody InstructorAdminUpdateDto dto,
             BindingResult result) {
 
         if (result.hasErrors()) {
-            String errorMessage = !result.getFieldErrors().isEmpty()
-                    ? result.getFieldErrors().get(0).getDefaultMessage()
-                    : "Error de validación";
             return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error(errorMessage, result));
+                    .body(ResponseWrapper.error(getFirstError(result)));
         }
 
         try {
-            Instructor actualizado = instructorService.actualizarInstructor(id, dto);
+            Instructor actualizado = instructorService.actualizarInstructorAdmin(id, dto);
             return ResponseEntity.ok()
                     .body(ResponseWrapper.success(actualizado, "Instructor actualizado"));
         } catch (BusinessException e) {
@@ -116,6 +108,7 @@ public class InstructorController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> desactivarInstructor(@PathVariable Long id) {
         try {
             instructorService.desactivarInstructor(id);
@@ -127,9 +120,9 @@ public class InstructorController {
         }
     }
 
-    @Operation(summary = "Obtener actividades de un instructor",
-            description = "Devuelve las actividades asignadas a un instructor específico (para administradores)")
+    @Operation(summary = "Obtener actividades de un instructor")
     @GetMapping("/instructores/{id}/actividades")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getActividadesInstructor(@PathVariable Long id) {
         try {
             List<Actividad> actividades = instructorService.getActividadesAsignadasRaw(id);
@@ -141,16 +134,27 @@ public class InstructorController {
         }
     }
 
-    @Operation(summary = "Obtener mis actividades (para instructores)",
-            description = "Devuelve las actividades asignadas al instructor actual con sus horarios específicos")
+    @Operation(summary = "Obtener perfil del instructor")
+    @GetMapping("/perfil/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> obtenerPerfilInstructor(@PathVariable Long id) {
+        try {
+            InstructorPerfilDto perfil = instructorService.obtenerPerfilInstructor(id);
+            return ResponseEntity.ok()
+                    .body(ResponseWrapper.success(perfil, "Perfil del instructor obtenido"));
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest()
+                    .body(ResponseWrapper.error(e.getMessage()));
+        }
+    }
+
+
+    @Operation(summary = "Obtener mis actividades")
     @GetMapping("/mis-actividades")
     @PreAuthorize("hasRole('INSTRUCTOR')")
-    public ResponseEntity<?> getMisActividades(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getMisActividades(@AuthenticationPrincipal UserDetails userDetails) {
         try {
-            String token = authHeader.substring(7);
-            String email = jwtService.extractUsername(token);
-            Long instructorId = instructorService.getInstructorIdByEmail(email);
-
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
             List<ActividadInstructorDto> actividades = instructorService.getActividadesAsignadasFormateadas(instructorId);
             return ResponseEntity.ok()
                     .body(ResponseWrapper.success(actividades, "Mis actividades obtenidas"));
@@ -160,9 +164,62 @@ public class InstructorController {
         }
     }
 
-    public Long getInstructorIdByEmail(String email) throws BusinessException {
-        return instructorRepository.findIdByUsuarioEmail(email)
-                .orElseThrow(() -> new BusinessException("No se encontró un instructor con ese email"));
+    @Operation(summary = "Obtener mi perfil")
+    @GetMapping("/mi-perfil")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> obtenerMiPerfil(@AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            Instructor instructor = instructorRepository.findActiveById(instructorId)
+                    .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
+
+            Map<String, Object> perfil = new HashMap<>();
+            perfil.put("id", instructor.getId());
+            perfil.put("nombre", instructor.getUsuario().getNombre());
+            perfil.put("apellido", instructor.getUsuario().getApellido());
+            perfil.put("email", instructor.getUsuario().getEmail());
+            perfil.put("especialidad", instructor.getEspecialidad());
+            perfil.put("fechaContratacion", instructor.getFechaContratacion());
+
+            return ResponseEntity.ok()
+                    .body(ResponseWrapper.success(perfil, "Mi perfil obtenido"));
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest()
+                    .body(ResponseWrapper.error(e.getMessage()));
+        }
     }
 
+    @Operation(summary = "Actualizar mi perfil")
+    @PutMapping("/mi-perfil")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> actualizarMiPerfil(
+            @Valid @RequestBody InstructorSelfUpdateDto dto,
+            BindingResult result,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest()
+                    .body(ResponseWrapper.error(getFirstError(result)));
+        }
+
+        try {
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            Instructor actualizado = instructorService.actualizarInstructorSelf(
+                    instructorId, dto, userDetails.getUsername());
+
+            return ResponseEntity.ok()
+                    .body(ResponseWrapper.success(actualizado, "Perfil actualizado exitosamente"));
+        } catch (BusinessException e) {
+            return ResponseEntity.badRequest()
+                    .body(ResponseWrapper.error(e.getMessage()));
+        }
+    }
+
+
+    private String getFirstError(BindingResult result) {
+        return result.getFieldErrors().stream()
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElse("Error de validación");
+    }
 }

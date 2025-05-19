@@ -1,8 +1,7 @@
 package com.unicolombo.bienestar.services;
 
+import com.unicolombo.bienestar.dto.*;
 import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
-import com.unicolombo.bienestar.dto.RegistroInstructorDto;
-import com.unicolombo.bienestar.dto.InstructorUpdateDto;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
@@ -55,9 +54,16 @@ public class InstructorService {
                 .orElseThrow(() -> new BusinessException("Instructor no encontrado o inactivo"));
 
         instructor.setEspecialidad(dto.getEspecialidad());
-        ZoneId zonaColombia = ZoneId.of("America/Bogota");
-        instructor.setFechaContratacion(LocalDate.now(zonaColombia));
 
+        Usuario usuario = instructor.getUsuario();
+        usuario.setNombre(dto.getNombre());
+        usuario.setApellido(dto.getApellido());
+
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
+
+        usuarioRepository.save(usuario);
         return instructorRepository.save(instructor);
     }
 
@@ -99,4 +105,68 @@ public class InstructorService {
         return instructorRepository.findIdByUsuarioEmail(email)
                 .orElseThrow(() -> new BusinessException("No se encontró un instructor con ese email"));
     }
+
+    public InstructorPerfilDto obtenerPerfilInstructor(Long id) {
+        Instructor instructor = instructorRepository.findActiveById(id)
+                .orElseThrow(() -> new BusinessException("Instructor no encontrado o inactivo"));
+
+        return mapToPerfilDto(instructor);
+    }
+
+    private InstructorPerfilDto mapToPerfilDto(Instructor instructor) {
+        InstructorPerfilDto dto = new InstructorPerfilDto();
+        dto.setId(instructor.getId());
+        dto.setNombre(instructor.getUsuario().getNombre());
+        dto.setApellido(instructor.getUsuario().getApellido());
+        dto.setEmail(instructor.getUsuario().getEmail());
+        dto.setEspecialidad(instructor.getEspecialidad());
+        dto.setFechaContratacion(instructor.getFechaContratacion().toString());
+
+        return dto;
+    }
+
+    public InstructorPerfilDto obtenerPerfilPorEmail(String email) {
+        Instructor instructor = instructorRepository.findByUsuarioEmail(email)
+                .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
+
+        return mapToPerfilDto(instructor);
+    }
+
+    public Instructor actualizarInstructorAdmin(Long id, InstructorAdminUpdateDto dto) {
+        Instructor instructor = instructorRepository.findActiveById(id)
+                .orElseThrow(() -> new BusinessException("Instructor no encontrado o inactivo"));
+
+        instructor.setEspecialidad(dto.getEspecialidad());
+
+        Usuario usuario = instructor.getUsuario();
+        usuario.setNombre(dto.getNombre());
+        usuario.setApellido(dto.getApellido());
+
+        usuarioRepository.save(usuario);
+        return instructorRepository.save(instructor);
+    }
+
+    public Instructor actualizarInstructorSelf(Long id, InstructorSelfUpdateDto dto, String emailActual) {
+        Instructor instructor = instructorRepository.findActiveById(id)
+                .orElseThrow(() -> new BusinessException("Instructor no encontrado o inactivo"));
+
+        if (!instructor.getUsuario().getEmail().equals(emailActual)) {
+            throw new BusinessException("No puedes actualizar otro instructor");
+        }
+
+        instructor.setEspecialidad(dto.getEspecialidad());
+
+        Usuario usuario = instructor.getUsuario();
+        usuario.setNombre(dto.getNombre());
+        usuario.setApellido(dto.getApellido());
+
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
+
+        usuarioRepository.save(usuario);
+        return instructorRepository.save(instructor);
+    }
+
+
 }
