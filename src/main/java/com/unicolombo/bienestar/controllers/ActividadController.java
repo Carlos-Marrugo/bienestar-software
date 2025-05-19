@@ -210,47 +210,59 @@ public class ActividadController {
         dto.put("id", actividad.getId());
         dto.put("nombre", actividad.getNombre());
 
-        if (actividad.getHorarioUbicacion() != null && actividad.getHorarioUbicacion().getUbicacion() != null) {
+        if (actividad.getUbicacion() != null) {
             Map<String, Object> ubicacionMap = new LinkedHashMap<>();
-            ubicacionMap.put("id", actividad.getHorarioUbicacion().getUbicacion().getId());
-            ubicacionMap.put("nombre", actividad.getHorarioUbicacion().getUbicacion().getNombre());
+            ubicacionMap.put("id", actividad.getUbicacion().getId());
+            ubicacionMap.put("nombre", actividad.getUbicacion().getNombre());
+            ubicacionMap.put("capacidad", actividad.getUbicacion().getCapacidad());
             dto.put("ubicacion", ubicacionMap);
-        } else {
-            dto.put("ubicacion", null);
         }
 
         dto.put("fechaInicio", actividad.getFechaInicio() != null ? actividad.getFechaInicio().toString() : null);
         dto.put("fechaFin", actividad.getFechaFin() != null ? actividad.getFechaFin().toString() : null);
-
-        if (actividad.getHorarioUbicacion() != null) {
-            dto.put("horaInicio", actividad.getHorarioUbicacion().getHoraInicio().toString());
-            dto.put("horaFin", actividad.getHorarioUbicacion().getHoraFin().toString());
-        } else {
-            dto.put("horaInicio", null);
-            dto.put("horaFin", null);
-        }
-
         dto.put("maxEstudiantes", actividad.getMaxEstudiantes());
 
+        if (actividad.getHorariosEspecificos() != null && !actividad.getHorariosEspecificos().isEmpty()) {
+            List<Map<String, Object>> horariosList = actividad.getHorariosEspecificos().stream()
+                    .map(h -> {
+                        Map<String, Object> horarioMap = new LinkedHashMap<>();
+                        horarioMap.put("id", h.getId());
+                        horarioMap.put("horaInicio", h.getHoraInicio().toString());
+                        horarioMap.put("horaFin", h.getHoraFin().toString());
+
+                        if (h.getHorarioBase() != null) {
+                            Map<String, Object> baseMap = new LinkedHashMap<>();
+                            baseMap.put("dia", h.getHorarioBase().getDia().name());
+                            baseMap.put("horaInicioBase", h.getHorarioBase().getHoraInicio().toString());
+                            baseMap.put("horaFinBase", h.getHorarioBase().getHoraFin().toString());
+                            horarioMap.put("horarioBase", baseMap);
+                        }
+
+                        return horarioMap;
+                    })
+                    .collect(Collectors.toList());
+            dto.put("horarios", horariosList);
+        }
+
         Map<String, Object> instructorMap = new LinkedHashMap<>();
-        if (actividad.getInstructor() != null && actividad.getInstructor().getUsuario() != null) {
+        if (actividad.getInstructor() != null) {
             Instructor instructor = actividad.getInstructor();
-            Usuario usuarioInstructor = instructor.getUsuario();
-
             instructorMap.put("id", instructor.getId());
-
-            Map<String, Object> usuarioMap = new LinkedHashMap<>();
-            usuarioMap.put("id", usuarioInstructor.getId());
-            usuarioMap.put("nombre", usuarioInstructor.getNombre());
-            usuarioMap.put("apellido", usuarioInstructor.getApellido());
-            usuarioMap.put("email", usuarioInstructor.getEmail());
-            usuarioMap.put("rol", usuarioInstructor.getRol() != null ? usuarioInstructor.getRol().name() : null);
-            usuarioMap.put("activo", usuarioInstructor.isActivo());
-
-            instructorMap.put("usuario", usuarioMap);
             instructorMap.put("especialidad", instructor.getEspecialidad());
             instructorMap.put("fechaContratacion", instructor.getFechaContratacion());
             instructorMap.put("nombreCompleto", instructor.getNombreCompleto());
+
+            if (instructor.getUsuario() != null) {
+                Usuario usuarioInstructor = instructor.getUsuario();
+                Map<String, Object> usuarioMap = new LinkedHashMap<>();
+                usuarioMap.put("id", usuarioInstructor.getId());
+                usuarioMap.put("nombre", usuarioInstructor.getNombre());
+                usuarioMap.put("apellido", usuarioInstructor.getApellido());
+                usuarioMap.put("email", usuarioInstructor.getEmail());
+                usuarioMap.put("rol", usuarioInstructor.getRol() != null ? usuarioInstructor.getRol().name() : null);
+                usuarioMap.put("activo", usuarioInstructor.isActivo());
+                instructorMap.put("usuario", usuarioMap);
+            }
         }
         dto.put("instructor", instructorMap);
 
