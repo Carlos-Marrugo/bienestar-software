@@ -18,8 +18,12 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/instructores")
@@ -66,41 +70,46 @@ public class RegistroHorasController {
         }
     }
 
-    @Operation(summary = "Verificar asistencia previa",
-            description = "Verifica si un estudiante ya tiene asistencia registrada para una actividad en la fecha actual")
+    @Operation(summary = "Obtener asistencias del estudiante",
+            description = "Obtiene todas las asistencias registradas de un estudiante en una actividad específica")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Verificación realizada"),
+            @ApiResponse(responseCode = "200", description = "Listado de asistencias obtenido"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos"),
             @ApiResponse(responseCode = "403", description = "No autorizado")
     })
     @GetMapping("/actividades/{actividadId}/estudiantes/{estudianteId}/verificar-asistencia")
     @PreAuthorize("hasRole('INSTRUCTOR')")
-    public ResponseEntity<?> verificarAsistencia(
+    public ResponseEntity<?> obtenerAsistenciasEstudiante(
             @PathVariable Long actividadId,
             @PathVariable Long estudianteId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Primero verificamos si está inscrito
-            boolean inscrito = registroHorasService.verificarInscripcion(actividadId, estudianteId, userDetails.getUsername());
-            if (!inscrito) {
-                return ResponseEntity.ok(Map.of(
-                        "status", "warning",
-                        "message", "El estudiante no está inscrito en esta actividad",
-                        "inscrito", false,
-                        "tieneAsistencia", false
-                ));
-            }
-
-            // Luego buscamos si tiene asistencia hoy
-            Optional<Asistencia> asistencia = registroHorasService.buscarAsistenciaActual(
+            List<Asistencia> asistencias = registroHorasService.obtenerAsistenciasEstudiante(
                     actividadId, estudianteId, userDetails.getUsername());
+
+            // Verificar si hay asistencias para el día actual
+            Optional<Asistencia> asistenciaHoy = asistencias.stream()
+                    .filter(a -> a.getFecha().equals(LocalDate.now()))
+                    .findFirst();
+
+            // Convertir las asistencias a un formato más legible para la respuesta
+            List<Map<String, ?>> asistenciasResponse = asistencias.stream()
+                    .map(a -> Map.of(
+                            "id", a.getId(),
+                            "fecha", a.getFecha(),
+                            "horas", a.getHoras(),
+                            "confirmada", a.isConfirmada(),
+                            "fechaRegistro", a.getFechaRegistro()
+                    ))
+                    .collect(Collectors.toList());
 
             return ResponseEntity.ok(Map.of(
                     "status", "success",
                     "inscrito", true,
-                    "tieneAsistencia", asistencia.isPresent(),
-                    "asistenciaId", asistencia.map(Asistencia::getId).orElse(null)
+                    "tieneAsistenciaHoy", asistenciaHoy.isPresent(),
+                    "asistenciaIdHoy", asistenciaHoy.map(Asistencia::getId).orElse(null),
+                    "asistencias", asistenciasResponse
             ));
         } catch (BusinessException e) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -108,7 +117,7 @@ public class RegistroHorasController {
                     "message", e.getMessage()
             ));
         } catch (Exception e) {
-            log.error("Error inesperado al verificar asistencia: {}", e.getMessage(), e);
+            log.error("Error inesperado al obtener asistencias: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",
                     "message", "Error interno del servidor"

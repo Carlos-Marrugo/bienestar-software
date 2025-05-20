@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -155,5 +156,22 @@ public class RegistroHorasService {
     private Instructor validarInstructor(String emailInstructor) {
         return instructorRepository.findByUsuarioEmail(emailInstructor)
                 .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
+    }
+
+    public List<Asistencia> obtenerAsistenciasEstudiante(Long actividadId, Long estudianteId, String emailInstructor) {
+        Instructor instructor = validarInstructor(emailInstructor);
+
+        Actividad actividad = actividadRepository.findById(actividadId)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+
+        if (!actividad.getInstructor().getId().equals(instructor.getId())) {
+            throw new BusinessException("No eres el instructor de esta actividad");
+        }
+
+        if (!inscripcionRepository.existsByEstudianteIdAndActividadId(estudianteId, actividadId)) {
+            throw new BusinessException("El estudiante no está inscrito en esta actividad");
+        }
+
+        return asistenciaRepository.findAllByEstudianteIdAndActividadId(estudianteId, actividadId);
     }
 }
