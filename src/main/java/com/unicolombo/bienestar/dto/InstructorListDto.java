@@ -6,12 +6,14 @@ import java.time.LocalDate;
 
 public class InstructorListDto {
     private Long id;
+    private String email;
     private String nombreCompleto;
     private String especialidad;
     private LocalDate fechaContratacion;
 
     // Constructor que toma un Instructor
     public InstructorListDto(Instructor instructor) {
+        this.email = instructor.getUsuario().getEmail();
         this.id = instructor.getId();
         this.nombreCompleto = instructor.getNombreCompleto();
         this.especialidad = instructor.getEspecialidad();
@@ -19,6 +21,15 @@ public class InstructorListDto {
     }
 
     // Getters
+
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public Long getId() {
         return id;

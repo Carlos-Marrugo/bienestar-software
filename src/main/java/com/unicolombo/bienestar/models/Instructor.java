@@ -16,6 +16,8 @@ public class Instructor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    String email;
+
     @OneToOne
     @JsonIgnoreProperties("instructor")
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
@@ -39,6 +41,14 @@ public class Instructor {
     @OneToMany(mappedBy = "instructor")
     @JsonIgnoreProperties({"instructor", "actividad"})
     private List<Asistencia> asistenciasRegistradas = new ArrayList<>();
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public Long getId() {
         return id;
