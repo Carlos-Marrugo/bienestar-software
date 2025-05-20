@@ -1,13 +1,12 @@
 package com.unicolombo.bienestar.services;
 
+import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleDto;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
-import com.unicolombo.bienestar.repositories.ActividadRepository;
-import com.unicolombo.bienestar.repositories.InstructorRepository;
-import com.unicolombo.bienestar.repositories.UbicacionRepository;
-import com.unicolombo.bienestar.repositories.UsuarioRepository;
+import com.unicolombo.bienestar.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +20,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -44,6 +45,9 @@ public class ActividadService {
 
     @Autowired
     private UbicacionRepository ubicacionRepository;
+
+    @Autowired
+    private InscripcionRepository inscripcionRepository;
 
     public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").descending());
@@ -275,5 +279,35 @@ public class ActividadService {
         return actividadRepository.findActividadesDisponibles(pageable);
     }
 
+    @Cacheable(value = "actividadesDisponibles", key = "{#pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
+    public Page<ActividadDisponibleDto> obtenerActividadesDisponiblesParaEstudiantes(Pageable pageable) {
+        log.info("Buscando actividades disponibles con paginación: {}", pageable);
 
+        LocalDate hoy = LocalDate.now();
+        Page<Actividad> actividadesPage = actividadRepository.findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(
+                hoy, pageable);
+
+        log.info("Se encontraron {} actividades vigentes", actividadesPage.getTotalElements());
+
+        return actividadesPage.map(actividad -> {
+            int inscripcionesActuales = inscripcionRepository.countByActividadId(actividad.getId());
+
+            return new ActividadDisponibleDto(actividad, inscripcionesActuales);
+        });
+    }
+
+    @Cacheable(value = "todasActividadesDisponibles")
+    public List<ActividadDisponibleDto> obtenerTodasActividadesDisponibles() {
+        log.info("Obteniendo todas las actividades disponibles");
+
+        LocalDate hoy = LocalDate.now();
+        List<Actividad> actividades = actividadRepository.findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy);
+
+        return actividades.stream()
+                .map(actividad -> {
+                    int inscripcionesActuales = inscripcionRepository.countByActividadId(actividad.getId());
+                    return new ActividadDisponibleDto(actividad, inscripcionesActuales);
+                })
+                .collect(Collectors.toList());
+    }
 }
