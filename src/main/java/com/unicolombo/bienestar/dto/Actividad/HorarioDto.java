@@ -10,6 +10,7 @@ import java.time.LocalTime;
 
 @Data
 public class HorarioDto {
+
     @NotNull(message = "El día es obligatorio")
     private DiaSemana dia;
 

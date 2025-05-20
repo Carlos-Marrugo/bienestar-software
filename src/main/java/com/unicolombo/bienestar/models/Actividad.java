@@ -17,7 +17,7 @@ import java.util.Set;
 @Table(name = "actividad")
 @Getter
 @Setter
-@ToString(exclude = {"horarios", "horariosEspecificos"}) // Evita recursión en toString()
+@ToString(exclude = {"horarios", "horariosEspecificos"})
 public class Actividad {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
