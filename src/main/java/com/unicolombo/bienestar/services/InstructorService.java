@@ -79,12 +79,15 @@ public class InstructorService {
         usuarioRepository.save(instructor.getUsuario());
     }
 
-    public List<Instructor> listarInstructoresActivos() {
-        return instructorRepository.findAllActive();
+    public List<InstructorListDto> listarInstructoresActivos() {
+        return instructorRepository.findAllActive().stream()
+                .map(InstructorListDto::new)
+                .collect(Collectors.toList());
     }
 
-    public Optional<Instructor> obtenerInstructorActivo(Long id) {
-        return instructorRepository.findActiveById(id);
+    public Optional<InstructorDetailDto> obtenerInstructorDetalle(Long id) {
+        return instructorRepository.findActiveById(id)
+                .map(InstructorDetailDto::new);
     }
 
 

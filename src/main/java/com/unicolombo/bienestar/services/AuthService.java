@@ -59,11 +59,6 @@ public class AuthService {
                 throw new BusinessException("Rol no soportado para autenticación");
         }
 
-        emailService.sendLoginNotification(
-                usuario.getEmail(),
-                usuario.getNombre(),
-                usuario.getRol().name()
-        );
 
         return usuario;
     }

@@ -70,7 +70,7 @@ public class InstructorController {
     @GetMapping("/instructores-activos")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> listarInstructores() {
-        List<Instructor> instructores = instructorService.listarInstructoresActivos();
+        List<InstructorListDto> instructores = instructorService.listarInstructoresActivos();
         return ResponseEntity.ok()
                 .body(ResponseWrapper.success(instructores, "Lista de instructores activos"));
     }
@@ -78,9 +78,9 @@ public class InstructorController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> obtenerInstructor(@PathVariable Long id) {
-        Optional<Instructor> instructor = instructorService.obtenerInstructorActivo(id);
-        return instructor.map(value -> ResponseEntity.ok()
-                        .body(ResponseWrapper.success(value, "Instructor encontrado")))
+        return instructorService.obtenerInstructorDetalle(id)
+                .map(instructor -> ResponseEntity.ok()
+                        .body(ResponseWrapper.success(instructor, "Instructor encontrado")))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ResponseWrapper.error("Instructor no encontrado")));
     }
