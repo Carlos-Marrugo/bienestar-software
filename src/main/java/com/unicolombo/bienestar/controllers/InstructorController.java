@@ -3,9 +3,11 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.*;
 import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
 import com.unicolombo.bienestar.dto.estudiante.EstudianteDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.repositories.InstructorRepository;
+import com.unicolombo.bienestar.services.ActividadService;
 import com.unicolombo.bienestar.services.InscripcionService;
 import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.exceptions.BusinessException;
@@ -16,6 +18,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +30,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +51,9 @@ public class InstructorController {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private ActividadService actividadService;
 
 
     @PostMapping("/agregar-instructor")
@@ -121,22 +130,7 @@ public class InstructorController {
         }
     }
 
-    @Operation(summary = "Obtener estudiantes inscritos en una actividad del instructor")
-    @GetMapping("/mis-actividades/{actividadId}/estudiantes")
-    @PreAuthorize("hasRole('INSTRUCTOR')")
-    public ResponseEntity<?> getEstudiantesInscritosEnActividad(
-            @PathVariable Long actividadId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        try {
-            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
-            List<EstudianteDto> estudiantes = instructorService.getEstudiantesInscritosEnActividad(instructorId, actividadId);
-            return ResponseEntity.ok()
-                    .body(ResponseWrapper.success(estudiantes, "Estudiantes inscritos en la actividad"));
-        } catch (BusinessException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ResponseWrapper.error(e.getMessage()));
-        }
-    }
+
 
     @Operation(summary = "Obtener perfil del instructor")
     @GetMapping("/perfil/{id}")
@@ -155,7 +149,6 @@ public class InstructorController {
 
     @Operation(summary = "Obtener mis actividades")
     @GetMapping("/mis-actividades")
-    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<?> getMisActividades(@AuthenticationPrincipal UserDetails userDetails) {
         try {
             Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
@@ -225,5 +218,39 @@ public class InstructorController {
                 .findFirst()
                 .map(FieldError::getDefaultMessage)
                 .orElse("Error de validación");
+    }
+
+    @Operation(summary = "Obtener estudiantes inscritos en actividad")
+    @GetMapping("/mis-actividades/{actividadId}/estudiantes")
+    public ResponseEntity<?> getEstudiantesInscritos(
+            @PathVariable Long actividadId,
+            @RequestParam(required = false) String filtro,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            Page<EstudianteInscritoDto> resultado = actividadService.getEstudiantesInscritosEnActividad(
+                    actividadId,
+                    instructorId,
+                    filtro,
+                    PageRequest.of(page, size, Sort.by("fechaInscripcion").descending()));
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("estudiantes", resultado.getContent());
+            response.put("paginacion", Map.of(
+                    "total", resultado.getTotalElements(),
+                    "paginas", resultado.getTotalPages(),
+                    "actual", resultado.getNumber()
+            ));
+
+            return ResponseEntity.ok(response);
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getStatus()).body(Map.of(
+                    "error", e.getMessage(),
+                    "timestamp", LocalDateTime.now()
+            ));
+        }
     }
 }

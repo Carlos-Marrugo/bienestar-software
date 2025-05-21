@@ -11,7 +11,9 @@ import com.unicolombo.bienestar.repositories.EstudianteRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.ActividadService;
 import com.unicolombo.bienestar.services.EstudianteService;
+import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.services.JwtService;
+import com.unicolombo.bienestar.utils.ResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,6 +33,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +58,9 @@ public class EstudianteController {
 
     @Autowired
     private ActividadService actividadService;
+
+    @Autowired
+    private InstructorService instructorService;
 
     @PostMapping("/registro")
     @Operation(summary = "Registrar nuevo estudiante")
@@ -153,7 +159,6 @@ public class EstudianteController {
         ));
     }
 
-    //listado de estudiantes por estado
     @GetMapping("/estado/{estado}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> listarPorEstado(
@@ -251,6 +256,38 @@ public class EstudianteController {
                     "status", "error",
                     "message", "Error al listar actividades disponibles"
             ));
+        }
+    }
+
+    @Operation(summary = "Obtener estudiantes inscritos en actividad del instructor")
+    @GetMapping("/mis-actividades/{actividadId}/estudiantes")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> getEstudiantesInscritos(
+            @PathVariable Long actividadId,
+            @RequestParam(required = false) String filtro,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            Page<EstudianteInscritoDto> estudiantes = actividadService.getEstudiantesInscritosEnActividad(
+                    actividadId,
+                    instructorId,
+                    filtro,
+                    PageRequest.of(page, size));
+
+            Map<String, Object> paginationInfo = new LinkedHashMap<>();
+            paginationInfo.put("totalItems", estudiantes.getTotalElements());
+            paginationInfo.put("totalPages", estudiantes.getTotalPages());
+            paginationInfo.put("currentPage", estudiantes.getNumber());
+
+            return ResponseEntity.ok(ResponseWrapper.success(
+                    estudiantes.getContent(),
+                    "Estudiantes inscritos obtenidos"));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getStatus() != null ? e.getStatus() : HttpStatus.BAD_REQUEST)
+                    .body(ResponseWrapper.error(e.getMessage()));
         }
     }
 }

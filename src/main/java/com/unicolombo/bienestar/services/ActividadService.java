@@ -1,18 +1,17 @@
 package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
-import com.unicolombo.bienestar.repositories.ActividadRepository;
-import com.unicolombo.bienestar.repositories.InstructorRepository;
-import com.unicolombo.bienestar.repositories.UbicacionRepository;
-import com.unicolombo.bienestar.repositories.UsuarioRepository;
+import com.unicolombo.bienestar.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +43,9 @@ public class ActividadService {
 
     @Autowired
     private UbicacionRepository ubicacionRepository;
+
+    @Autowired
+    private InscripcionRepository inscripcionRepository;
 
     public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").descending());
@@ -182,19 +184,29 @@ public class ActividadService {
 
     @Transactional
     public Actividad editarActividad(Long id, ActividadCreateDto dto, String emailUsuario) {
-        Actividad actividad = actividadRepository.findById(id)
+        Actividad actividad = actividadRepository.findByIdWithHorarios(id)
                 .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
 
-        if (!actividad.getHorarioUbicacion().getId().equals(dto.getHorarios().get(0).getHorarioUbicacionId())) {
-            throw new BusinessException("No se puede cambiar el horario de una actividad existente");
+        if (dto.getHorarios() == null || dto.getHorarios().isEmpty()) {
+            throw new BusinessException("Debe proporcionar al menos un horario");
         }
 
-        if (dto.getFechaInicio().isBefore(LocalDate.now())) {
-            throw new BusinessException("No se puede mover la actividad al pasado");
-        }
+        if (!actividad.getInstructor().getId().equals(dto.getInstructorId())) {
+            Instructor nuevoInstructor = instructorRepository.findById(dto.getInstructorId())
+                    .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
 
-        if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
-            throw new BusinessException("La fecha de fin debe ser posterior a la de inicio");
+            for (ActividadCreateDto.HorarioActividadDto horarioDto : dto.getHorarios()) {
+                HorarioUbicacion horarioBase = ubicacionRepository.findById(dto.getUbicacionId())
+                        .orElseThrow(() -> new BusinessException("Ubicación no encontrada"))
+                        .getHorarios().stream()
+                        .filter(h -> h.getId().equals(horarioDto.getHorarioUbicacionId()))
+                        .findFirst()
+                        .orElseThrow(() -> new BusinessException("Horario base no encontrado"));
+
+                validarSolapamientos(horarioBase, horarioDto, dto, id);
+            }
+
+            actividad.setInstructor(nuevoInstructor);
         }
 
         actividad.setNombre(dto.getNombre());
@@ -202,10 +214,31 @@ public class ActividadService {
         actividad.setFechaFin(dto.getFechaFin());
         actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
 
-        if (!actividad.getInstructor().getId().equals(dto.getInstructorId())) {
-            Instructor nuevoInstructor = instructorRepository.findById(dto.getInstructorId())
-                    .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
-            actividad.setInstructor(nuevoInstructor);
+        if (!actividad.getUbicacion().getId().equals(dto.getUbicacionId())) {
+            Ubicacion nuevaUbicacion = ubicacionRepository.findById(dto.getUbicacionId())
+                    .orElseThrow(() -> new BusinessException("Ubicación no encontrada"));
+            actividad.setUbicacion(nuevaUbicacion);
+        }
+
+        actividad.getHorariosEspecificos().clear();
+        for (ActividadCreateDto.HorarioActividadDto horarioDto : dto.getHorarios()) {
+            HorarioUbicacion horarioBase = ubicacionRepository.findById(dto.getUbicacionId())
+                    .orElseThrow(() -> new BusinessException("Ubicación no encontrada"))
+                    .getHorarios().stream()
+                    .filter(h -> h.getId().equals(horarioDto.getHorarioUbicacionId()))
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException("Horario base no encontrado en la ubicación"));
+
+            validarHorarioEspecifico(horarioDto, horarioBase);
+            validarSolapamientos(horarioBase, horarioDto, dto, id);
+
+            HorarioActividad horarioActividad = new HorarioActividad();
+            horarioActividad.setHorarioBase(horarioBase);
+            horarioActividad.setHoraInicio(horarioDto.getHoraInicio());
+            horarioActividad.setHoraFin(horarioDto.getHoraFin());
+            horarioActividad.setActividad(actividad);
+
+            actividad.getHorariosEspecificos().add(horarioActividad);
         }
 
         auditoriaService.registrarAccion(
@@ -275,5 +308,30 @@ public class ActividadService {
         return actividadRepository.findActividadesDisponibles(pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<EstudianteInscritoDto> getEstudiantesInscritosEnActividad(
+            Long actividadId,
+            Long instructorId,
+            String filtro,
+            Pageable pageable) {
+
+        Actividad actividad = actividadRepository.findById(actividadId)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada", HttpStatus.NOT_FOUND));
+
+        if(!actividad.getInstructor().getId().equals(instructorId)) {
+            throw new BusinessException("No autorizado para ver esta actividad", HttpStatus.FORBIDDEN);
+        }
+
+        Page<Inscripcion> inscripciones = inscripcionRepository.findByActividadId(actividadId, filtro, pageable);
+
+        return inscripciones.map(insc -> new EstudianteInscritoDto(
+                insc.getEstudiante().getId(),
+                insc.getEstudiante().getCodigoEstudiantil(),
+                insc.getEstudiante().getUsuario().getNombre() + " " + insc.getEstudiante().getUsuario().getApellido(),
+                insc.getEstudiante().getProgramaAcademico(),
+                insc.getEstudiante().getSemestre(),
+                insc.getFechaInscripcion().atStartOfDay()
+        ));
+    }
 
 }
