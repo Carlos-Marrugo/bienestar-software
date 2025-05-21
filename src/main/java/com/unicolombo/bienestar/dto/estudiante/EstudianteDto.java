@@ -13,4 +13,6 @@ public class EstudianteDto {
     private String programaAcademico;
     private Integer semestre;
     private EstadoEstudiante estado;
+
+
 }

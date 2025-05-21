@@ -25,7 +25,4 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
 
     @Query("SELECT i.id FROM Instructor i WHERE i.usuario.email = :email")
     Optional<Long> findIdByUsuarioEmail(@Param("email") String email);
-
-
-
 }

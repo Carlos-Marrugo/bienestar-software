@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.*;
 import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteDto;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.repositories.InstructorRepository;
@@ -120,16 +121,19 @@ public class InstructorController {
         }
     }
 
-    @Operation(summary = "Obtener actividades de un instructor")
-    @GetMapping("/instructores/{id}/actividades")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getActividadesInstructor(@PathVariable Long id) {
+    @Operation(summary = "Obtener estudiantes inscritos en una actividad del instructor")
+    @GetMapping("/mis-actividades/{actividadId}/estudiantes")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> getEstudiantesInscritosEnActividad(
+            @PathVariable Long actividadId,
+            @AuthenticationPrincipal UserDetails userDetails) {
         try {
-            List<Actividad> actividades = instructorService.getActividadesAsignadasRaw(id);
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            List<EstudianteDto> estudiantes = instructorService.getEstudiantesInscritosEnActividad(instructorId, actividadId);
             return ResponseEntity.ok()
-                    .body(ResponseWrapper.success(actividades, "Actividades del instructor obtenidas"));
+                    .body(ResponseWrapper.success(estudiantes, "Estudiantes inscritos en la actividad"));
         } catch (BusinessException e) {
-            return ResponseEntity.badRequest()
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ResponseWrapper.error(e.getMessage()));
         }
     }

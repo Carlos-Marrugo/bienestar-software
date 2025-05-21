@@ -6,6 +6,7 @@ import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.ActividadService;
+import com.unicolombo.bienestar.services.InstructorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,6 +39,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Tag(name = "Actividades", description = "Gestión de actividades deportivas y académicas")
 public class ActividadController {
+
+    @Autowired
+    private InstructorService instructorService;
 
     @Autowired
     private ActividadService actividadService;
@@ -103,16 +107,15 @@ public class ActividadController {
         Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
-        if (usuario.getRol() == Role.INSTRUCTOR &&
-                !actividad.getInstructor().getId().equals(usuario.getId())) {
-            throw new AccessDeniedException("No tienes permisos para ver esta actividad");
+        if (usuario.getRol() == Role.INSTRUCTOR) {
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            if (!actividad.getInstructor().getId().equals(instructorId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                                "status", "error",
+                                "message", "No tienes permisos para ver esta actividad"));
+            }
         }
-
-        /*if (usuario.getRol() == Role.ESTUDIANTE &&
-                actividad.getInscripciones().stream()
-                        .noneMatch(i -> i.getEstudiante().getUsuario().getId().equals(usuario.getId()))) {
-            throw new AccessDeniedException("No estás inscrito en esta actividad");
-        }*/
 
         return ResponseEntity.ok(Map.of(
                 "status", "success",
