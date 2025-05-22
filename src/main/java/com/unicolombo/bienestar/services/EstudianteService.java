@@ -7,6 +7,7 @@ import com.unicolombo.bienestar.repositories.*;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,8 @@ public class EstudianteService {
     private final EmailService emailService;
     private final SuspencionRepository suspensionRepo;
     private final AuditoriaService auditoriaService;
+    private final InscripcionRepository inscripcionRepository;
+    private final ActividadRepository actividadRepository;
 
 
     @Transactional
@@ -217,4 +220,5 @@ public class EstudianteService {
     public Page<EstudianteDto> listarEstudiantesPorInstructor(Long instructorId, Pageable pageable) {
         return Page.empty(pageable);
     }
+
 }

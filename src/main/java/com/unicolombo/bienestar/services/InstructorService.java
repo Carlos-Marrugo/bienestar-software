@@ -2,10 +2,12 @@ package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.*;
 import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteDto;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +28,9 @@ public class InstructorService {
     private final InstructorRepository instructorRepository;
     private final ActividadRepository actividadRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private InscripcionRepository inscripcionRepository;
 
     public Instructor registrarInstructor(RegistroInstructorDto dto) {
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
@@ -79,12 +84,15 @@ public class InstructorService {
         usuarioRepository.save(instructor.getUsuario());
     }
 
-    public List<Instructor> listarInstructoresActivos() {
-        return instructorRepository.findAllActive();
+    public List<InstructorListDto> listarInstructoresActivos() {
+        return instructorRepository.findAllActive().stream()
+                .map(InstructorListDto::new)
+                .collect(Collectors.toList());
     }
 
-    public Optional<Instructor> obtenerInstructorActivo(Long id) {
-        return instructorRepository.findActiveById(id);
+    public Optional<InstructorDetailDto> obtenerInstructorDetalle(Long id) {
+        return instructorRepository.findActiveById(id)
+                .map(InstructorDetailDto::new);
     }
 
 
@@ -98,6 +106,26 @@ public class InstructorService {
         List<Actividad> actividades = getActividadesAsignadasRaw(instructorId);
         return actividades.stream()
                 .map(ActividadInstructorDto::new)
+                .collect(Collectors.toList());
+    }
+
+    public List<EstudianteDto> getEstudiantesInscritosEnActividad(Long instructorId, Long actividadId) {
+        Actividad actividad = actividadRepository.findById(actividadId)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+
+        if (!actividad.getInstructor().getId().equals(instructorId)) {
+            throw new BusinessException("No estás asignado a esta actividad");
+        }
+
+        return inscripcionRepository.findByActividadId(actividadId, Pageable.unpaged()).stream()
+                .map(inscripcion -> {
+                    EstudianteDto dto = new EstudianteDto();
+                    dto.setId(inscripcion.getEstudiante().getId());
+                    dto.setNombreCompleto(inscripcion.getEstudiante().getNombreCompleto());
+                    dto.setCodigoEstudiantil(inscripcion.getEstudiante().getCodigoEstudiantil());
+                    dto.setProgramaAcademico(inscripcion.getEstudiante().getProgramaAcademico());
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 

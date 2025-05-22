@@ -41,4 +41,21 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
     @Query("SELECT i FROM Inscripcion i WHERE i.estudiante.id = :estudianteId AND i.actividad.id = :actividadId")
     Optional<Inscripcion> findByEstudianteIdAndActividadId(@Param("estudianteId") Long estudianteId,
                                                            @Param("actividadId") Long actividadId);
+
+    @Query("SELECT i FROM Inscripcion i " +
+            "JOIN FETCH i.estudiante e " +
+            "JOIN FETCH e.usuario " +
+            "WHERE i.actividad.id = :actividadId " +
+            "AND (:filtro IS NULL OR " +
+            "LOWER(e.usuario.nombre) LIKE LOWER(concat('%', :filtro, '%')) OR " +
+            "LOWER(e.usuario.apellido) LIKE LOWER(concat('%', :filtro, '%')) OR " +
+            "LOWER(e.codigoEstudiantil) LIKE LOWER(concat('%', :filtro, '%')))")
+    Page<Inscripcion> findByActividadId(
+            @Param("actividadId") Long actividadId,
+            @Param("filtro") String filtro,
+            Pageable pageable);
+
+
+
+
 }
