@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.repositories;
 
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Inscripcion;
@@ -55,6 +56,39 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
             @Param("filtro") String filtro,
             Pageable pageable);
 
+    @Query("SELECT new com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto(" +
+            "e.id, e.codigoEstudiantil, " +
+            "CONCAT(u.nombre, ' ', u.apellido), " +
+            "e.programaAcademico, e.semestre, " +
+            "i.fechaInscripcion, " +
+            "e.horasAcumuladas) " +
+            "FROM Inscripcion i " +
+            "JOIN i.estudiante e " +
+            "JOIN e.usuario u " +
+            "WHERE i.actividad.id = :actividadId " +
+            "ORDER BY i.fechaInscripcion DESC")
+    Page<EstudianteInscritoDto> findEstudiantesInscritosByActividadId(
+            @Param("actividadId") Long actividadId,
+            Pageable pageable);
+
+    @Query("SELECT new com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto(" +
+            "e.id, e.codigoEstudiantil, " +
+            "CONCAT(u.nombre, ' ', u.apellido), " +
+            "e.programaAcademico, e.semestre, " +
+            "i.fechaInscripcion, " +
+            "e.horasAcumuladas) " +
+            "FROM Inscripcion i " +
+            "JOIN i.estudiante e " +
+            "JOIN e.usuario u " +
+            "WHERE i.actividad.id = :actividadId " +
+            "AND (LOWER(u.nombre) LIKE LOWER(CONCAT('%', :filtro, '%')) " +
+            "OR LOWER(u.apellido) LIKE LOWER(CONCAT('%', :filtro, '%')) " +
+            "OR LOWER(e.codigoEstudiantil) LIKE LOWER(CONCAT('%', :filtro, '%'))) " +
+            "ORDER BY i.fechaInscripcion DESC")
+    Page<EstudianteInscritoDto> findEstudiantesInscritosByActividadIdWithFilter(
+            @Param("actividadId") Long actividadId,
+            @Param("filtro") String filtro,
+            Pageable pageable);
 
 
 

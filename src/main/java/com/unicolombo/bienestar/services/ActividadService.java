@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleDto;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -309,5 +311,27 @@ public class ActividadService {
                     return new ActividadDisponibleDto(actividad, inscripcionesActuales);
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<EstudianteInscritoDto> getEstudiantesInscritosEnActividad(
+            Long actividadId,
+            Long instructorId,
+            String filtro,
+            Pageable pageable) {
+
+        Actividad actividad = actividadRepository.findById(actividadId)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+
+        if (!actividad.getInstructor().getId().equals(instructorId)) {
+            throw new BusinessException("No tienes permisos para ver los estudiantes de esta actividad", HttpStatus.FORBIDDEN);
+        }
+
+        if (filtro != null && !filtro.trim().isEmpty()) {
+            return inscripcionRepository.findEstudiantesInscritosByActividadIdWithFilter(
+                    actividadId, filtro.trim(), pageable);
+        } else {
+            return inscripcionRepository.findEstudiantesInscritosByActividadId(actividadId, pageable);
+        }
     }
 }
