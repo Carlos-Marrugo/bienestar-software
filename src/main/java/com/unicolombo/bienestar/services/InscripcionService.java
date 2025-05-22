@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.InscripcionCreateDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
@@ -185,5 +186,9 @@ public class InscripcionService {
         return actividad.getInstructor() != null &&
                 actividad.getInstructor().getUsuario() != null &&
                 actividad.getInstructor().getUsuario().getId().equals(usuarioId);
+    }
+
+    public Page<EstudianteInscritoDto> getEstudiantesInscritosByInstructor(Long instructorId, Pageable pageable) {
+        return inscripcionRepository.findEstudiantesInscritosByInstructorId(instructorId, pageable);
     }
 }

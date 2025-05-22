@@ -14,6 +14,4 @@ public class EstudianteInscritoDto {
     private String programaAcademico;
     private Integer semestre;
     private LocalDateTime fechaInscripcion;
-
-
 }

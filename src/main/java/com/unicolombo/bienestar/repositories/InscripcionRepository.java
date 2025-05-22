@@ -1,5 +1,6 @@
 package com.unicolombo.bienestar.repositories;
 
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Inscripcion;
@@ -55,7 +56,15 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
             @Param("filtro") String filtro,
             Pageable pageable);
 
-
-
-
+    @Query("SELECT new com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto(" +
+            "e.id, e.codigoEstudiantil, CONCAT(u.nombre, ' ', u.apellido), " +
+            "e.programaAcademico, e.semestre, CAST(i.fechaInscripcion AS java.time.LocalDateTime)) " +
+            "FROM Inscripcion i " +
+            "JOIN i.estudiante e " +
+            "JOIN e.usuario u " +
+            "WHERE i.actividad.instructor.id = :instructorId")
+    Page<EstudianteInscritoDto> findEstudiantesInscritosByInstructorId(
+            @Param("instructorId") Long instructorId,
+            Pageable pageable
+    );
 }

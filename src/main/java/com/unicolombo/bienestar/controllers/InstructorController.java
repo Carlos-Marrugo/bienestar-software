@@ -131,7 +131,6 @@ public class InstructorController {
     }
 
 
-
     @Operation(summary = "Obtener perfil del instructor")
     @GetMapping("/perfil/{id}")
     @PreAuthorize("hasRole('ADMIN')")
