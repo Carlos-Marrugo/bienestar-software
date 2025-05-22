@@ -118,6 +118,14 @@ public class AuthController {
         }
     }
 
+    @Operation(
+            summary = "Solicitar restablecimiento de contraseña",
+            description = "Envía un correo con un enlace para restablecer la contraseña",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Correo enviado correctamente"),
+                    @ApiResponse(responseCode = "400", description = "Error en la solicitud")
+            }
+    )
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody LoginRequest request) {
         try {
@@ -133,17 +141,31 @@ public class AuthController {
         }
     }
 
+    @Operation(
+            summary = "Restablecer contraseña",
+            description = "Actualiza la contraseña del usuario usando un token válido",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Contraseña actualizada correctamente"),
+                    @ApiResponse(responseCode = "400", description = "Token inválido o expirado")
+            }
+    )
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {
             String email = jwtService.extractUsername(request.getToken());
+
             Usuario usuario = usuarioRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("No existe un usuario con ese correo"));
 
             usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
             usuarioRepository.save(usuario);
 
-            return ResponseEntity.ok(Map.of("message", "Contraseña restablecida exitosamente"));
+            refreshTokenService.deleteByUsuario(usuario);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Contraseña restablecida exitosamente",
+                    "email", email
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "Token inválido o expirado",

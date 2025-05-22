@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/instructor")
 public class InstructorController {
 
     @Autowired
@@ -230,11 +230,10 @@ public class InstructorController {
 
         try {
             Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+
             Page<EstudianteInscritoDto> resultado = actividadService.getEstudiantesInscritosEnActividad(
-                    actividadId,
-                    instructorId,
-                    filtro,
-                    PageRequest.of(page, size, Sort.by("fechaInscripcion").descending()));
+                    actividadId, instructorId, filtro, PageRequest.of(page, size, Sort.by("fechaInscripcion").descending())
+            );
 
             Map<String, Object> response = new HashMap<>();
             response.put("estudiantes", resultado.getContent());
@@ -248,6 +247,11 @@ public class InstructorController {
         } catch (BusinessException e) {
             return ResponseEntity.status(e.getStatus()).body(Map.of(
                     "error", e.getMessage(),
+                    "timestamp", LocalDateTime.now()
+            ));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "error", "Error interno del servidor: " + ex.getMessage(),
                     "timestamp", LocalDateTime.now()
             ));
         }

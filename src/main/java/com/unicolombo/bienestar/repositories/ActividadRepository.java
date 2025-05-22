@@ -220,4 +220,7 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
             "AND a.maxEstudiantes > (SELECT COUNT(i) FROM Inscripcion i WHERE i.actividad.id = a.id) " +
             "ORDER BY a.fechaInicio ASC")
     Page<Actividad> findActividadesDisponibles(Pageable pageable);
+
+    Page<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha, Pageable pageable);
+    List<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha);
 }

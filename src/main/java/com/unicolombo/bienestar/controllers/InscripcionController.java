@@ -27,6 +27,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,7 +45,7 @@ public class InscripcionController {
     private UsuarioRepository usuarioRepository;
 
     @Operation(summary = "Inscribir estudiante a una actividad",
-            description = "Permite a un estudiante inscribirse en una actividad")
+            description = "Permite a un estudiante inscribirse en una actividad con todos sus horarios definidos")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Inscripción creada exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos"),
@@ -59,6 +60,8 @@ public class InscripcionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
+            log.info("Procesando solicitud de inscripción para estudiante {} en actividad {}", estudianteId, actividadId);
+
             Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
@@ -72,11 +75,37 @@ public class InscripcionController {
 
             Inscripcion inscripcion = inscripcionService.crearInscripcion(dto, userDetails.getUsername());
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "status", "success",
-                    "message", "Inscripción creada exitosamente",
-                    "data", inscripcion
-            ));
+            // Crear una respuesta más detallada que incluya la información de horarios
+            Map<String, Object> respuesta = new HashMap<>();
+            respuesta.put("status", "success");
+            respuesta.put("message", "Inscripción creada exitosamente");
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("inscripcionId", inscripcion.getId());
+            data.put("estudianteId", inscripcion.getEstudiante().getId());
+            data.put("actividadId", inscripcion.getActividad().getId());
+            data.put("fechaInscripcion", inscripcion.getFechaInscripcion());
+
+            // Añadir información de horarios si existe
+            if (inscripcion.getActividad().getUbicacion() != null &&
+                    inscripcion.getActividad().getUbicacion().getHorarios() != null) {
+
+                data.put("horarios", inscripcion.getActividad().getUbicacion().getHorarios().stream()
+                        .map(horario -> Map.of(
+                                "id", horario.getId(),
+                                "dia", horario.getDia(),
+                                "horaInicio", horario.getHoraInicio(),
+                                "horaFin", horario.getHoraFin()
+                        ))
+                        .collect(Collectors.toList()));
+
+                data.put("totalHorarios", inscripcion.getActividad().getUbicacion().getHorarios().size());
+            }
+
+            respuesta.put("data", data);
+
+            log.info("Inscripción procesada exitosamente con ID: {}", inscripcion.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
         } catch (BusinessException e) {
             log.error("Error de negocio al inscribir estudiante: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
@@ -134,17 +163,31 @@ public class InscripcionController {
             List<Map<String, Object>> estudiantes = inscripciones.stream()
                     .map(inscripcion -> {
                         Estudiante estudiante = inscripcion.getEstudiante();
-                        return Map.of(
-                                "inscripcionId", inscripcion.getId(),
-                                "estudiante", Map.of(
-                                        "id", estudiante.getId(),
-                                        "nombre", estudiante.getNombreCompleto(),
-                                        "codigo", estudiante.getCodigoEstudiantil(),
-                                        "programa", estudiante.getProgramaAcademico(),
-                                        "fechaInscripcion", inscripcion.getFechaInscripcion(),
-                                        "horasRegistradas", inscripcion.getHorasRegistradas()
-                                )
-                        );
+                        Map<String, Object> estudianteData = new HashMap<>();
+                        estudianteData.put("inscripcionId", inscripcion.getId());
+                        estudianteData.put("estudiante", Map.of(
+                                "id", estudiante.getId(),
+                                "nombre", estudiante.getNombreCompleto(),
+                                "codigo", estudiante.getCodigoEstudiantil(),
+                                "programa", estudiante.getProgramaAcademico(),
+                                "fechaInscripcion", inscripcion.getFechaInscripcion(),
+                                "horasRegistradas", inscripcion.getHorasRegistradas()
+                        ));
+
+                        // Añadir información de horarios si existe
+                        if (inscripcion.getActividad().getUbicacion() != null &&
+                                inscripcion.getActividad().getUbicacion().getHorarios() != null) {
+
+                            estudianteData.put("horarios", inscripcion.getActividad().getUbicacion().getHorarios().stream()
+                                    .map(horario -> Map.of(
+                                            "dia", horario.getDia(),
+                                            "horaInicio", horario.getHoraInicio(),
+                                            "horaFin", horario.getHoraFin()
+                                    ))
+                                    .collect(Collectors.toList()));
+                        }
+
+                        return estudianteData;
                     })
                     .collect(Collectors.toList());
 
