@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.*;
 import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
+import com.unicolombo.bienestar.dto.Actividad.ActividadEstudianteDto;
 import com.unicolombo.bienestar.dto.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Actividad;
@@ -26,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -294,5 +296,18 @@ public class EstudianteController {
             return ResponseEntity.status(e.getStatus() != null ? e.getStatus() : HttpStatus.BAD_REQUEST)
                     .body(ResponseWrapper.error(e.getMessage()));
         }
+    }
+
+    @GetMapping("/mis-actividades")
+    @PreAuthorize("hasRole('ESTUDIANTE')")
+    public ResponseEntity<Page<ActividadEstudianteDto>> obtenerActividadesInscritas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        Estudiante estudiante = estudianteService.obtenerEstudianteByUsuario(userDetails.getUsername());
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ActividadEstudianteDto> actividades = actividadService.obtenerActividadesInscritasPorEstudiante(estudiante.getId(), pageable);
+        return ResponseEntity.ok(actividades);
     }
 }

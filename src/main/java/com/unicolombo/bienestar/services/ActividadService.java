@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.services;
 
 
 import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
+import com.unicolombo.bienestar.dto.Actividad.ActividadEstudianteDto;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
@@ -328,5 +329,9 @@ public class ActividadService {
         } else {
             return inscripcionRepository.findEstudiantesInscritosByActividadId(actividadId, pageable);
         }
+    }
+
+    public Page<ActividadEstudianteDto> obtenerActividadesInscritasPorEstudiante(Long estudianteId, Pageable pageable) {
+        return inscripcionRepository.findActividadesByEstudianteId(estudianteId, pageable);
     }
 }

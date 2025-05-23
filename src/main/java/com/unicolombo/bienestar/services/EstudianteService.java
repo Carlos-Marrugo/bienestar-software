@@ -221,4 +221,9 @@ public class EstudianteService {
         return Page.empty(pageable);
     }
 
+    public Estudiante obtenerEstudianteByUsuario(String email) {
+        Usuario usuario = usuarioRepo.findByEmail(email).orElseThrow(RuntimeException::new);
+        return estudianteRepo.findByUsuarioId(usuario.getId()).orElseThrow(RuntimeException::new);
+    }
+
 }
