@@ -51,7 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/admin/mi-perfil").hasRole("INSTRUCTOR")
                         .requestMatchers(HttpMethod.PUT, "/api/admin/mi-perfil").hasRole("INSTRUCTOR")
                         .requestMatchers(HttpMethod.GET, "/api/instructor/mis-actividades/*/estudiantes").hasRole("INSTRUCTOR")
-                        .requestMatchers(HttpMethod.GET, "/api/admin/mis-actividades/*/estudiantes").hasRole("INSTRUCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/admin/mis-actividades/*/estudiantes").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

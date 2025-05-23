@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +39,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
+@Slf4j
 public class InstructorController {
 
     @Autowired
@@ -229,21 +231,19 @@ public class InstructorController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            Long instructorId = null;
+            log.info("Authorities: {}", userDetails.getAuthorities());
+            String authority = userDetails.getAuthorities().toString();
+            log.info("Authorities s: {}", authority);
+            if (authority.equals("[ROLE_INSTRUCTOR]")) {
+                log.info("En el if");
+                instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            }
 
             Page<EstudianteInscritoDto> resultado = actividadService.getEstudiantesInscritosEnActividad(
                     actividadId, instructorId, filtro, PageRequest.of(page, size, Sort.by("fechaInscripcion").descending())
             );
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("estudiantes", resultado.getContent());
-            response.put("paginacion", Map.of(
-                    "total", resultado.getTotalElements(),
-                    "paginas", resultado.getTotalPages(),
-                    "actual", resultado.getNumber()
-            ));
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(resultado);
         } catch (BusinessException e) {
             return ResponseEntity.status(e.getStatus()).body(Map.of(
                     "error", e.getMessage(),

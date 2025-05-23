@@ -320,11 +320,13 @@ public class ActividadService {
             String filtro,
             Pageable pageable) {
 
-        Actividad actividad = actividadRepository.findById(actividadId)
-                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+        if (instructorId != null){
+            Actividad actividad = actividadRepository.findById(actividadId)
+                    .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
 
-        if (!actividad.getInstructor().getId().equals(instructorId)) {
-            throw new BusinessException("No tienes permisos para ver los estudiantes de esta actividad", HttpStatus.FORBIDDEN);
+            if (!actividad.getInstructor().getId().equals(instructorId)) {
+                throw new BusinessException("No tienes permisos para ver los estudiantes de esta actividad", HttpStatus.FORBIDDEN);
+            }
         }
 
         if (filtro != null && !filtro.trim().isEmpty()) {
