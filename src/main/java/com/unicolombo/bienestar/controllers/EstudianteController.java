@@ -34,6 +34,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -235,27 +236,31 @@ public class EstudianteController {
     @GetMapping("/actividades/disponibles")
     @PreAuthorize("hasRole('ESTUDIANTE')")
     public ResponseEntity<?> listarActividadesDisponibles(
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         try {
-            Page<ActividadDisponibleSimpleDto> actividades =
-                    actividadService.listarActividadesDisponiblesSimples(page, size);
+            int pageIndex = page - 1;
+            if (pageIndex < 0) pageIndex = 0;
 
-            return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "data", actividades.getContent(),
-                    "meta", Map.of(
-                            "total", actividades.getTotalElements(),
-                            "page", page,
-                            "size", size,
-                            "totalPages", actividades.getTotalPages(),
-                            "hasNext", actividades.hasNext(),
-                            "hasPrevious", actividades.hasPrevious()
-                    )
-            ));
+            Page<ActividadDisponibleSimpleDto> actividades =
+                    actividadService.listarActividadesDisponiblesSimples(pageIndex, size);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", actividades.getContent());
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("totalItems", actividades.getTotalElements());
+            pagination.put("currentPage", page);
+            pagination.put("totalPages", actividades.getTotalPages());
+
+            response.put("pagination", pagination);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-//            log.error("Error al listar actividades disponibles: {}", e.getMessage());
+            // log.error("Error al listar actividades disponibles: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",
                     "message", "Error interno del servidor",
@@ -270,29 +275,46 @@ public class EstudianteController {
     public ResponseEntity<?> getEstudiantesInscritos(
             @PathVariable Long actividadId,
             @RequestParam(required = false) String filtro,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
+            int pageIndex = page - 1;
+            if (pageIndex < 0) pageIndex = 0;
+
             Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
             Page<EstudianteInscritoDto> estudiantes = actividadService.getEstudiantesInscritosEnActividad(
                     actividadId,
                     instructorId,
                     filtro,
-                    PageRequest.of(page, size));
+                    PageRequest.of(pageIndex, size));
 
-            Map<String, Object> paginationInfo = new LinkedHashMap<>();
-            paginationInfo.put("totalItems", estudiantes.getTotalElements());
-            paginationInfo.put("totalPages", estudiantes.getTotalPages());
-            paginationInfo.put("currentPage", estudiantes.getNumber());
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", estudiantes.getContent());
 
-            return ResponseEntity.ok(ResponseWrapper.success(
-                    estudiantes.getContent(),
-                    "Estudiantes inscritos obtenidos"));
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("totalItems", estudiantes.getTotalElements());
+            pagination.put("currentPage", page);
+            pagination.put("totalPages", estudiantes.getTotalPages());
+
+            response.put("pagination", pagination);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
         } catch (BusinessException e) {
             return ResponseEntity.status(e.getStatus() != null ? e.getStatus() : HttpStatus.BAD_REQUEST)
-                    .body(ResponseWrapper.error(e.getMessage()));
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage()
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "status", "error",
+                    "message", "Error interno del servidor",
+                    "details", e.getMessage()
+            ));
         }
     }
 }

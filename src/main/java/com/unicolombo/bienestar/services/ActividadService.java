@@ -297,7 +297,6 @@ public class ActividadService {
     public Page<ActividadDisponibleSimpleDto> listarActividadesDisponiblesSimples(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").ascending());
 
-        // Usar una consulta más simple sin FETCH de relaciones complejas
         LocalDate hoy = LocalDate.now();
         Page<Actividad> actividadesPage = actividadRepository
                 .findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);

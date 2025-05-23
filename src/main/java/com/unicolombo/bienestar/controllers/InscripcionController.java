@@ -75,7 +75,6 @@ public class InscripcionController {
 
             Inscripcion inscripcion = inscripcionService.crearInscripcion(dto, userDetails.getUsername());
 
-            // Crear una respuesta más detallada que incluya la información de horarios
             Map<String, Object> respuesta = new HashMap<>();
             respuesta.put("status", "success");
             respuesta.put("message", "Inscripción creada exitosamente");
@@ -86,7 +85,6 @@ public class InscripcionController {
             data.put("actividadId", inscripcion.getActividad().getId());
             data.put("fechaInscripcion", inscripcion.getFechaInscripcion());
 
-            // Añadir información de horarios si existe
             if (inscripcion.getActividad().getUbicacion() != null &&
                     inscripcion.getActividad().getUbicacion().getHorarios() != null) {
 
@@ -174,7 +172,6 @@ public class InscripcionController {
                                 "horasRegistradas", inscripcion.getHorasRegistradas()
                         ));
 
-                        // Añadir información de horarios si existe
                         if (inscripcion.getActividad().getUbicacion() != null &&
                                 inscripcion.getActividad().getUbicacion().getHorarios() != null) {
 

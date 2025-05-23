@@ -26,11 +26,9 @@ public class ActividadDisponibleSimpleDto {
         this.inscripcionesActuales = inscripcionesActuales;
         this.cuposDisponibles = actividad.getMaxEstudiantes() - inscripcionesActuales;
 
-        // Ubicación simplificada
         this.ubicacion = actividad.getUbicacion() != null ?
                 actividad.getUbicacion().getNombre() : "Sin ubicación";
 
-        // Instructor simplificado (sin acceder a relaciones complejas)
         this.instructor = "Por asignar";
         if (actividad.getInstructor() != null) {
             if (actividad.getInstructor().getUsuario() != null) {
