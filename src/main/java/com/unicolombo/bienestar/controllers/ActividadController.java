@@ -374,25 +374,20 @@ public class ActividadController {
             @ApiResponse(responseCode = "500", description = "Error al procesar la solicitud")
     })
     @GetMapping("/estudiantes/actividades/disponibles")
-    public ResponseEntity<?> listarActividadesDisponibles(
+    public ResponseEntity<?> listarActividadesDisponiblesSimplificado(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String orderBy,
             @RequestParam(required = false, defaultValue = "ASC") String direction) {
 
         try {
-            log.info("Solicitando lista de actividades disponibles, página: {}, tamaño: {}", page, size);
-
             Sort.Direction sortDirection = direction.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
             Sort sort = orderBy != null ?
                     Sort.by(sortDirection, orderBy) :
                     Sort.by(sortDirection, "fechaInicio");
 
             Pageable pageable = PageRequest.of(page, size, sort);
-
-            Page<ActividadDisponibleDto> actividades = actividadService.obtenerActividadesDisponiblesParaEstudiantes(pageable);
-
-            log.info("Se encontraron {} actividades disponibles", actividades.getTotalElements());
+            Page<ActividadDisponibleDto> actividades = actividadService.obtenerActividadesDisponiblesSimples(pageable);
 
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
@@ -407,13 +402,12 @@ public class ActividadController {
             ));
 
             return ResponseEntity.ok(response);
-
         } catch (Exception e) {
-            log.error("Error inesperado al listar actividades disponibles", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "status", "error",
                     "message", "Error al procesar la solicitud: " + e.getMessage()
             ));
         }
     }
+
 }

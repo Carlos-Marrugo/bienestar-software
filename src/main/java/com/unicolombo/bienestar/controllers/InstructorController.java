@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/instructor")
+@RequestMapping("/api/admin")
 public class InstructorController {
 
     @Autowired

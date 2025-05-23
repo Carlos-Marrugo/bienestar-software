@@ -282,21 +282,16 @@ public class ActividadService {
     }
 
     @Cacheable(value = "actividadesDisponibles", key = "{#pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
-    public Page<ActividadDisponibleDto> obtenerActividadesDisponiblesParaEstudiantes(Pageable pageable) {
-        log.info("Buscando actividades disponibles con paginación: {}", pageable);
-
+    public Page<ActividadDisponibleDto> obtenerActividadesDisponiblesSimples(Pageable pageable) {
         LocalDate hoy = LocalDate.now();
-        Page<Actividad> actividadesPage = actividadRepository.findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(
-                hoy, pageable);
-
-        log.info("Se encontraron {} actividades vigentes", actividadesPage.getTotalElements());
+        Page<Actividad> actividadesPage = actividadRepository.findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);
 
         return actividadesPage.map(actividad -> {
-            int inscripcionesActuales = inscripcionRepository.countByActividadId(actividad.getId());
-
-            return new ActividadDisponibleDto(actividad, inscripcionesActuales);
+            int inscritos = inscripcionRepository.countByActividadId(actividad.getId());
+            return new ActividadDisponibleDto(actividad, inscritos);
         });
     }
+
 
     @Cacheable(value = "todasActividadesDisponibles")
     public List<ActividadDisponibleDto> obtenerTodasActividadesDisponibles() {
