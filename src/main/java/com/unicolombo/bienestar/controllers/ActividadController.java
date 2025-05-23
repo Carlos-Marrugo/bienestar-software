@@ -1,11 +1,14 @@
 package com.unicolombo.bienestar.controllers;
 
+
+import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.ActividadService;
+import com.unicolombo.bienestar.services.InstructorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,6 +41,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Tag(name = "Actividades", description = "Gestión de actividades deportivas y académicas")
 public class ActividadController {
+
+    @Autowired
+    private InstructorService instructorService;
 
     @Autowired
     private ActividadService actividadService;
@@ -103,16 +109,15 @@ public class ActividadController {
         Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
-        if (usuario.getRol() == Role.INSTRUCTOR &&
-                !actividad.getInstructor().getId().equals(usuario.getId())) {
-            throw new AccessDeniedException("No tienes permisos para ver esta actividad");
+        if (usuario.getRol() == Role.INSTRUCTOR) {
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            if (!actividad.getInstructor().getId().equals(instructorId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                                "status", "error",
+                                "message", "No tienes permisos para ver esta actividad"));
+            }
         }
-
-        /*if (usuario.getRol() == Role.ESTUDIANTE &&
-                actividad.getInscripciones().stream()
-                        .noneMatch(i -> i.getEstudiante().getUsuario().getId().equals(usuario.getId()))) {
-            throw new AccessDeniedException("No estás inscrito en esta actividad");
-        }*/
 
         return ResponseEntity.ok(Map.of(
                 "status", "success",
@@ -168,10 +173,12 @@ public class ActividadController {
         try {
             Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+            log.info("Role {}", usuario.getRol());
 
-            if (usuario.getRol() == Role.INSTRUCTOR &&
-                    !usuario.getId().equals(instructorId)) {
-                throw new AccessDeniedException("Solo puedes ver tus propias actividades");
+            if (usuario.getRol() == Role.INSTRUCTOR) {
+                if(instructorId != instructorService.getInstructorIdByEmail(userDetails.getUsername())) {
+                    throw new AccessDeniedException("Solo puedes ver tus propias actividades");
+                }
             }
 
             Page<Actividad> actividades = actividadService.findByInstructorId(instructorId, page, size);
@@ -183,8 +190,7 @@ public class ActividadController {
                             "currentPage", actividades.getNumber(),
                             "totalItems", actividades.getTotalElements(),
                             "totalPages", actividades.getTotalPages()
-                    )
-            ));
+                    )));
         } catch (BusinessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", "error",
@@ -210,47 +216,59 @@ public class ActividadController {
         dto.put("id", actividad.getId());
         dto.put("nombre", actividad.getNombre());
 
-        if (actividad.getHorarioUbicacion() != null && actividad.getHorarioUbicacion().getUbicacion() != null) {
+        if (actividad.getUbicacion() != null) {
             Map<String, Object> ubicacionMap = new LinkedHashMap<>();
-            ubicacionMap.put("id", actividad.getHorarioUbicacion().getUbicacion().getId());
-            ubicacionMap.put("nombre", actividad.getHorarioUbicacion().getUbicacion().getNombre());
+            ubicacionMap.put("id", actividad.getUbicacion().getId());
+            ubicacionMap.put("nombre", actividad.getUbicacion().getNombre());
+            ubicacionMap.put("capacidad", actividad.getUbicacion().getCapacidad());
             dto.put("ubicacion", ubicacionMap);
-        } else {
-            dto.put("ubicacion", null);
         }
 
         dto.put("fechaInicio", actividad.getFechaInicio() != null ? actividad.getFechaInicio().toString() : null);
         dto.put("fechaFin", actividad.getFechaFin() != null ? actividad.getFechaFin().toString() : null);
-
-        if (actividad.getHorarioUbicacion() != null) {
-            dto.put("horaInicio", actividad.getHorarioUbicacion().getHoraInicio().toString());
-            dto.put("horaFin", actividad.getHorarioUbicacion().getHoraFin().toString());
-        } else {
-            dto.put("horaInicio", null);
-            dto.put("horaFin", null);
-        }
-
         dto.put("maxEstudiantes", actividad.getMaxEstudiantes());
 
+        if (actividad.getHorariosEspecificos() != null && !actividad.getHorariosEspecificos().isEmpty()) {
+            List<Map<String, Object>> horariosList = actividad.getHorariosEspecificos().stream()
+                    .map(h -> {
+                        Map<String, Object> horarioMap = new LinkedHashMap<>();
+                        horarioMap.put("id", h.getId());
+                        horarioMap.put("horaInicio", h.getHoraInicio().toString());
+                        horarioMap.put("horaFin", h.getHoraFin().toString());
+
+                        if (h.getHorarioBase() != null) {
+                            Map<String, Object> baseMap = new LinkedHashMap<>();
+                            baseMap.put("dia", h.getHorarioBase().getDia().name());
+                            baseMap.put("horaInicioBase", h.getHorarioBase().getHoraInicio().toString());
+                            baseMap.put("horaFinBase", h.getHorarioBase().getHoraFin().toString());
+                            horarioMap.put("horarioBase", baseMap);
+                        }
+
+                        return horarioMap;
+                    })
+                    .collect(Collectors.toList());
+            dto.put("horarios", horariosList);
+        }
+
         Map<String, Object> instructorMap = new LinkedHashMap<>();
-        if (actividad.getInstructor() != null && actividad.getInstructor().getUsuario() != null) {
+        if (actividad.getInstructor() != null) {
             Instructor instructor = actividad.getInstructor();
-            Usuario usuarioInstructor = instructor.getUsuario();
-
             instructorMap.put("id", instructor.getId());
-
-            Map<String, Object> usuarioMap = new LinkedHashMap<>();
-            usuarioMap.put("id", usuarioInstructor.getId());
-            usuarioMap.put("nombre", usuarioInstructor.getNombre());
-            usuarioMap.put("apellido", usuarioInstructor.getApellido());
-            usuarioMap.put("email", usuarioInstructor.getEmail());
-            usuarioMap.put("rol", usuarioInstructor.getRol() != null ? usuarioInstructor.getRol().name() : null);
-            usuarioMap.put("activo", usuarioInstructor.isActivo());
-
-            instructorMap.put("usuario", usuarioMap);
             instructorMap.put("especialidad", instructor.getEspecialidad());
             instructorMap.put("fechaContratacion", instructor.getFechaContratacion());
             instructorMap.put("nombreCompleto", instructor.getNombreCompleto());
+
+            if (instructor.getUsuario() != null) {
+                Usuario usuarioInstructor = instructor.getUsuario();
+                Map<String, Object> usuarioMap = new LinkedHashMap<>();
+                usuarioMap.put("id", usuarioInstructor.getId());
+                usuarioMap.put("nombre", usuarioInstructor.getNombre());
+                usuarioMap.put("apellido", usuarioInstructor.getApellido());
+                usuarioMap.put("email", usuarioInstructor.getEmail());
+                usuarioMap.put("rol", usuarioInstructor.getRol() != null ? usuarioInstructor.getRol().name() : null);
+                usuarioMap.put("activo", usuarioInstructor.isActivo());
+                instructorMap.put("usuario", usuarioMap);
+            }
         }
         dto.put("instructor", instructorMap);
 
@@ -276,6 +294,7 @@ public class ActividadController {
             Map<String, Object> instructorMap = new LinkedHashMap<>();
             instructorMap.put("id", actividad.getInstructor().getId());
             instructorMap.put("nombre", actividad.getInstructor().getUsuario().getNombre());
+            instructorMap.put("apellido", actividad.getInstructor().getUsuario().getApellido());
             dto.put("instructor", instructorMap);
         }
 
@@ -350,4 +369,71 @@ public class ActividadController {
             ));
         }
     }
+
+    @Operation(summary = "Listar actividades disponibles para estudiantes",
+            description = "Muestra un listado simplificado de actividades disponibles con sus horarios y creador")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+            @ApiResponse(responseCode = "500", description = "Error al procesar la solicitud")
+    })
+    @GetMapping("/estudiantes/actividades/disponibles")
+    public ResponseEntity<?> listarActividadesDisponiblesSimplificado(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String orderBy,
+            @RequestParam(required = false, defaultValue = "ASC") String direction) {
+
+        try {
+            int pageIndex = page - 1;
+            if (pageIndex < 0) pageIndex = 0;
+
+            Sort.Direction sortDirection = direction.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
+            Sort sort = orderBy != null ?
+                    Sort.by(sortDirection, orderBy) :
+                    Sort.by(sortDirection, "fechaInicio");
+
+            Pageable pageable = PageRequest.of(pageIndex, size, sort);
+            Page<ActividadDisponibleSimpleDto> actividades = actividadService.obtenerActividadesDisponiblesSimples(pageable);
+
+            List<Map<String, Object>> actividadesSimplificadas = actividades.getContent().stream()
+                    .map(this::mapearActividadSimple)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", actividadesSimplificadas);
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("totalItems", actividades.getTotalElements());
+            pagination.put("currentPage", page);
+            pagination.put("totalPages", actividades.getTotalPages());
+
+            response.put("pagination", pagination);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "Error al procesar la solicitud: " + e.getMessage()
+            ));
+        }
+    }
+
+
+private Map<String, Object> mapearActividadSimple(ActividadDisponibleSimpleDto dto) {
+    Map<String, Object> actividadSimple = new LinkedHashMap<>();
+    actividadSimple.put("id", dto.getId());
+    actividadSimple.put("nombre", dto.getNombre());
+    actividadSimple.put("ubicacion", dto.getUbicacion());
+    actividadSimple.put("fechaInicio", dto.getFechaInicio());
+    actividadSimple.put("fechaFin", dto.getFechaFin());
+    actividadSimple.put("maxEstudiantes", dto.getMaxEstudiantes());
+    actividadSimple.put("inscripcionesActuales", dto.getInscripcionesActuales());
+    actividadSimple.put("cuposDisponibles", dto.getCuposDisponibles());
+    actividadSimple.put("instructor", dto.getInstructor());
+
+    return actividadSimple;
+}
+
 }

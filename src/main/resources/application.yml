@@ -41,6 +41,10 @@ spring:
           ssl:
             trust: smtp.gmail.com
             protocols: TLSv1.2
+            timeout: 10000
+            connectiontimeout: 10000
+            writetimeout: 10000
+            debug: true
     from: ${MAIL_USER}
 
   thymeleaf:
@@ -50,6 +54,7 @@ spring:
     cache: false
 
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:8080}
   jwt:
     secret: S2RjYmxFM2ZsYVZXaWRTa0VMMEdmWjZYZUV4dzRjY0NacmlvT0VnT2NVRWlDTzNv
     expirationMs: 86400000

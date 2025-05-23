@@ -1,18 +1,20 @@
 package com.unicolombo.bienestar.services;
 
+
+import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
-import com.unicolombo.bienestar.repositories.ActividadRepository;
-import com.unicolombo.bienestar.repositories.InstructorRepository;
-import com.unicolombo.bienestar.repositories.UbicacionRepository;
-import com.unicolombo.bienestar.repositories.UsuarioRepository;
+import com.unicolombo.bienestar.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +23,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -44,6 +48,9 @@ public class ActividadService {
 
     @Autowired
     private UbicacionRepository ubicacionRepository;
+
+    @Autowired
+    private InscripcionRepository inscripcionRepository;
 
     public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").descending());
@@ -184,7 +191,6 @@ public class ActividadService {
     public Actividad editarActividad(Long id, ActividadCreateDto dto, String emailUsuario) {
         Actividad actividad = actividadRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
-
         if (!actividad.getHorarioUbicacion().getId().equals(dto.getHorarios().get(0).getHorarioUbicacionId())) {
             throw new BusinessException("No se puede cambiar el horario de una actividad existente");
         }
@@ -262,7 +268,6 @@ public class ActividadService {
     public Actividad findById(Long id) {
         Actividad actividad = actividadRepository.findByIdWithHorarios(id)
                 .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
-
         if (actividad.getHorarioUbicacion() == null && !actividad.getHorarios().isEmpty()) {
             actividad.setHorarioUbicacion(actividad.getHorarios().iterator().next());
         }
@@ -275,5 +280,52 @@ public class ActividadService {
         return actividadRepository.findActividadesDisponibles(pageable);
     }
 
+    @Cacheable(value = "actividadesDisponibles", key = "{#pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
+    public Page<ActividadDisponibleSimpleDto> obtenerActividadesDisponiblesSimples(Pageable pageable) {
+        LocalDate hoy = LocalDate.now();
+        Page<Actividad> actividadesPage = actividadRepository.findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);
 
+        return actividadesPage.map(actividad -> {
+            int inscritos = inscripcionRepository.countByActividadId(actividad.getId());
+            return new ActividadDisponibleSimpleDto(actividad, inscritos);
+        });
+    }
+
+    @Cacheable(value = "actividadesDisponiblesSimples", key = "{#page, #size}")
+    public Page<ActividadDisponibleSimpleDto> listarActividadesDisponiblesSimples(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").ascending());
+
+        LocalDate hoy = LocalDate.now();
+        Page<Actividad> actividadesPage = actividadRepository
+                .findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);
+
+        return actividadesPage.map(actividad -> {
+            int inscritos = inscripcionRepository.countByActividadId(actividad.getId());
+            return new ActividadDisponibleSimpleDto(actividad, inscritos);
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public Page<EstudianteInscritoDto> getEstudiantesInscritosEnActividad(
+            Long actividadId,
+            Long instructorId,
+            String filtro,
+            Pageable pageable) {
+
+        if (instructorId != null){
+            Actividad actividad = actividadRepository.findById(actividadId)
+                    .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+
+            if (!actividad.getInstructor().getId().equals(instructorId)) {
+                throw new BusinessException("No tienes permisos para ver los estudiantes de esta actividad", HttpStatus.FORBIDDEN);
+            }
+        }
+
+        if (filtro != null && !filtro.trim().isEmpty()) {
+            return inscripcionRepository.findEstudiantesInscritosByActividadIdWithFilter(
+                    actividadId, filtro.trim(), pageable);
+        } else {
+            return inscripcionRepository.findEstudiantesInscritosByActividadId(actividadId, pageable);
+        }
+    }
 }

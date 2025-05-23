@@ -7,6 +7,7 @@ import com.unicolombo.bienestar.dto.ResetPasswordRequest;
 import com.unicolombo.bienestar.models.RefreshToken;
 import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
+import com.unicolombo.bienestar.repositories.InstructorRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.AuthService;
 import com.unicolombo.bienestar.services.JwtService;
@@ -44,6 +45,9 @@ public class AuthController {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
+    private InstructorRepository instructorRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Operation(
@@ -55,7 +59,6 @@ public class AuthController {
                     @ApiResponse(responseCode = "400", description = "Credenciales inválidas")
             }
     )
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -70,6 +73,9 @@ public class AuthController {
 
             if (usuario.getRol() == Role.ESTUDIANTE && usuario.getEstudiante() != null) {
                 response.put("estudianteId", usuario.getEstudiante().getId());
+            } else if (usuario.getRol() == Role.INSTRUCTOR) {
+                instructorRepository.findByUsuarioEmail(usuario.getEmail())
+                        .ifPresent(instructor -> response.put("instructorId", instructor.getId()));
             }
 
             return ResponseEntity.ok(response);
@@ -92,21 +98,34 @@ public class AuthController {
     )
     @PostMapping("/login-estudiante")
     public ResponseEntity<?> loginEstudiante(@Valid @RequestBody LoginEstudianteRequest request) {
-        Usuario usuario = authService.authenticateEstudiante(
-                request.getEmail(),
-                request.getCodigoEstudiantil());
+        try {
+            Usuario usuario = authService.authenticateEstudiante(
+                    request.getEmail(),
+                    request.getCodigoEstudiantil());
 
-        String jwt = jwtService.generateToken(usuario);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(usuario);
+            String jwt = jwtService.generateToken(usuario);
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(usuario);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", jwt);
-        response.put("refreshToken", refreshToken.getToken());
-        response.put("estudianteId", usuario.getEstudiante().getId());
+            Map<String, Object> response = buildTokenResponse(jwt, refreshToken.getToken(), usuario);
+            response.put("estudianteId", usuario.getEstudiante().getId());
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", e.getMessage(),
+                    "timestamp", System.currentTimeMillis()
+            ));
+        }
     }
 
+    @Operation(
+            summary = "Solicitar restablecimiento de contraseña",
+            description = "Envía un correo con un enlace para restablecer la contraseña",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Correo enviado correctamente"),
+                    @ApiResponse(responseCode = "400", description = "Error en la solicitud")
+            }
+    )
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody LoginRequest request) {
         try {
@@ -122,17 +141,31 @@ public class AuthController {
         }
     }
 
+    @Operation(
+            summary = "Restablecer contraseña",
+            description = "Actualiza la contraseña del usuario usando un token válido",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Contraseña actualizada correctamente"),
+                    @ApiResponse(responseCode = "400", description = "Token inválido o expirado")
+            }
+    )
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {
             String email = jwtService.extractUsername(request.getToken());
+
             Usuario usuario = usuarioRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("No existe un usuario con ese correo"));
 
             usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
             usuarioRepository.save(usuario);
 
-            return ResponseEntity.ok(Map.of("message", "Contraseña restablecida exitosamente"));
+            refreshTokenService.deleteByUsuario(usuario);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Contraseña restablecida exitosamente",
+                    "email", email
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "Token inválido o expirado",
@@ -140,7 +173,6 @@ public class AuthController {
             ));
         }
     }
-
 
     @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
@@ -156,12 +188,21 @@ public class AuthController {
             RefreshToken newRefreshToken = refreshTokenService.rotateRefreshToken(refreshToken);
             String newJwt = jwtService.generateToken(refreshToken.getUsuario());
 
-            return ResponseEntity.ok(buildTokenResponse(newJwt, newRefreshToken.getToken(), refreshToken.getUsuario()));
+            Map<String, Object> response = buildTokenResponse(newJwt, newRefreshToken.getToken(), refreshToken.getUsuario());
+
+            Usuario usuario = refreshToken.getUsuario();
+            if (usuario.getRol() == Role.ESTUDIANTE && usuario.getEstudiante() != null) {
+                response.put("estudianteId", usuario.getEstudiante().getId());
+            } else if (usuario.getRol() == Role.INSTRUCTOR) {
+                instructorRepository.findByUsuarioEmail(usuario.getEmail())
+                        .ifPresent(instructor -> response.put("instructorId", instructor.getId()));
+            }
+
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return buildErrorResponse(e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
     }
-
 
     private Map<String, Object> buildTokenResponse(String token, String refreshToken, Usuario usuario) {
         Map<String, Object> response = new HashMap<>();

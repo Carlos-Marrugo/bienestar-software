@@ -215,9 +215,17 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
             @Param("actividadIdExcluir") Long actividadIdExcluir);
 
     @Query("SELECT a FROM Actividad a " +
+            "LEFT JOIN FETCH a.ubicacion " +
+            "LEFT JOIN FETCH a.instructor i " +
+            "LEFT JOIN FETCH i.usuario " +
+            "LEFT JOIN FETCH a.horariosEspecificos h " +
+            "LEFT JOIN FETCH h.horarioBase " +
             "WHERE a.fechaInicio >= CURRENT_DATE " +
             "AND (a.fechaFin IS NULL OR a.fechaFin >= CURRENT_DATE) " +
             "AND a.maxEstudiantes > (SELECT COUNT(i) FROM Inscripcion i WHERE i.actividad.id = a.id) " +
             "ORDER BY a.fechaInicio ASC")
     Page<Actividad> findActividadesDisponibles(Pageable pageable);
+
+    Page<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha, Pageable pageable);
+    List<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha);
 }

@@ -18,6 +18,8 @@ public class HorarioActividad {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String nombre;
+
     @ManyToOne
     @JoinColumn(name = "horario_ubicacion_id", nullable = false)
     @JsonIgnoreProperties({"actividad", "horariosEspecificos"})
@@ -46,4 +48,5 @@ public class HorarioActividad {
     public int hashCode() {
         return getClass().hashCode();
     }
+
 }

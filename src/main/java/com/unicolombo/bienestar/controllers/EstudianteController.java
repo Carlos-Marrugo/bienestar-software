@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.*;
+import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Actividad;
@@ -11,7 +12,9 @@ import com.unicolombo.bienestar.repositories.EstudianteRepository;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.ActividadService;
 import com.unicolombo.bienestar.services.EstudianteService;
+import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.services.JwtService;
+import com.unicolombo.bienestar.utils.ResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,6 +34,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +60,9 @@ public class EstudianteController {
 
     @Autowired
     private ActividadService actividadService;
+
+    @Autowired
+    private InstructorService instructorService;
 
     @PostMapping("/registro")
     @Operation(summary = "Registrar nuevo estudiante")
@@ -153,7 +161,6 @@ public class EstudianteController {
         ));
     }
 
-    //listado de estudiantes por estado
     @GetMapping("/estado/{estado}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> listarPorEstado(
@@ -229,27 +236,84 @@ public class EstudianteController {
     @GetMapping("/actividades/disponibles")
     @PreAuthorize("hasRole('ESTUDIANTE')")
     public ResponseEntity<?> listarActividadesDisponibles(
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         try {
-            Page<Actividad> actividades = actividadService.listarActividadesDisponibles(page, size);
+            int pageIndex = page - 1;
+            if (pageIndex < 0) pageIndex = 0;
 
-            return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "data", actividades.getContent(),
-                    "meta", Map.of(
-                            "total", actividades.getTotalElements(),
-                            "page", page,
-                            "size", size,
-                            "totalPages", actividades.getTotalPages()
-                    )
-            ));
+            Page<ActividadDisponibleSimpleDto> actividades =
+                    actividadService.listarActividadesDisponiblesSimples(pageIndex, size);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", actividades.getContent());
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("totalItems", actividades.getTotalElements());
+            pagination.put("currentPage", page);
+            pagination.put("totalPages", actividades.getTotalPages());
+
+            response.put("pagination", pagination);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-//            log.error("Error al listar actividades disponibles", e);
+            // log.error("Error al listar actividades disponibles: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",
-                    "message", "Error al listar actividades disponibles"
+                    "message", "Error interno del servidor",
+                    "details", e.getMessage()
+            ));
+        }
+    }
+
+    @Operation(summary = "Obtener estudiantes inscritos en actividad del instructor")
+    @GetMapping("/mis-actividades/{actividadId}/estudiantes")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<?> getEstudiantesInscritos(
+            @PathVariable Long actividadId,
+            @RequestParam(required = false) String filtro,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            int pageIndex = page - 1;
+            if (pageIndex < 0) pageIndex = 0;
+
+            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+            Page<EstudianteInscritoDto> estudiantes = actividadService.getEstudiantesInscritosEnActividad(
+                    actividadId,
+                    instructorId,
+                    filtro,
+                    PageRequest.of(pageIndex, size));
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", estudiantes.getContent());
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("totalItems", estudiantes.getTotalElements());
+            pagination.put("currentPage", page);
+            pagination.put("totalPages", estudiantes.getTotalPages());
+
+            response.put("pagination", pagination);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getStatus() != null ? e.getStatus() : HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage()
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "status", "error",
+                    "message", "Error interno del servidor",
+                    "details", e.getMessage()
             ));
         }
     }

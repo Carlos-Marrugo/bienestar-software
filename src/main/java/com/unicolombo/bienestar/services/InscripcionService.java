@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.InscripcionCreateDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
@@ -76,6 +77,16 @@ public class InscripcionService {
             throw new BusinessException("El estudiante no está activo y no puede inscribirse");
         }
 
+        // Verificar que la actividad tenga ubicación y horarios definidos
+        if (actividad.getUbicacion() == null || actividad.getUbicacion().getHorarios() == null ||
+                actividad.getUbicacion().getHorarios().isEmpty()) {
+            log.warn("La actividad {} no tiene horarios definidos", dto.getActividadId());
+            throw new BusinessException("La actividad no tiene horarios definidos");
+        }
+
+        log.info("La actividad {} tiene {} horarios definidos",
+                actividad.getId(), actividad.getUbicacion().getHorarios().size());
+
         try {
             Inscripcion inscripcion = new Inscripcion();
             inscripcion.setEstudiante(estudiante);
@@ -83,11 +94,16 @@ public class InscripcionService {
             inscripcion.setFechaInscripcion(LocalDate.now());
             inscripcion.setHorasRegistradas(0);
 
+            // Al guardar la inscripción, se asocia con la actividad que ya tiene sus horarios
+            // La relación entre Actividad y sus horarios debe estar configurada para cargar correctamente
             inscripcion = inscripcionRepository.save(inscripcion);
-            log.info("Inscripción creada exitosamente: ID {}", inscripcion.getId());
+
+            log.info("Inscripción creada exitosamente: ID {} con {} horarios asociados",
+                    inscripcion.getId(), actividad.getUbicacion().getHorarios().size());
 
             String detalleAuditoria = "Inscripción de estudiante " + estudiante.getNombreCompleto() +
-                    " en actividad " + actividad.getNombre();
+                    " en actividad " + actividad.getNombre() +
+                    " con " + actividad.getUbicacion().getHorarios().size() + " horarios asociados";
 
             registrarAuditoriaSinActividad(emailUsuario, TipoAccion.CREACION, detalleAuditoria);
 
@@ -185,5 +201,13 @@ public class InscripcionService {
         return actividad.getInstructor() != null &&
                 actividad.getInstructor().getUsuario() != null &&
                 actividad.getInstructor().getUsuario().getId().equals(usuarioId);
+    }
+
+    public Page<EstudianteInscritoDto> getEstudiantesInscritosByInstructor(Long instructorId, Pageable pageable) {
+        Page<EstudianteInscritoDto> page = inscripcionRepository.findEstudiantesInscritosByInstructorId(instructorId, pageable);
+        if (page.isEmpty()) {
+            throw new BusinessException("No se encontraron estudiantes inscritos para el instructor con ID: " + instructorId);
+        }
+        return page;
     }
 }

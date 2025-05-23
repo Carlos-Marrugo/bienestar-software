@@ -2,11 +2,13 @@ package com.unicolombo.bienestar.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
+@ToString
 public class ActividadCreateDto {
     @NotBlank(message = "El nombre es obligatorio")
     @Size(max = 100, message = "El nombre no puede exceder los 100 caracteres")
