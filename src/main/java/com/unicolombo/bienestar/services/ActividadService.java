@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleDto;
+
+import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
@@ -282,30 +283,29 @@ public class ActividadService {
     }
 
     @Cacheable(value = "actividadesDisponibles", key = "{#pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
-    public Page<ActividadDisponibleDto> obtenerActividadesDisponiblesSimples(Pageable pageable) {
+    public Page<ActividadDisponibleSimpleDto> obtenerActividadesDisponiblesSimples(Pageable pageable) {
         LocalDate hoy = LocalDate.now();
         Page<Actividad> actividadesPage = actividadRepository.findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);
 
         return actividadesPage.map(actividad -> {
             int inscritos = inscripcionRepository.countByActividadId(actividad.getId());
-            return new ActividadDisponibleDto(actividad, inscritos);
+            return new ActividadDisponibleSimpleDto(actividad, inscritos);
         });
     }
 
+    @Cacheable(value = "actividadesDisponiblesSimples", key = "{#page, #size}")
+    public Page<ActividadDisponibleSimpleDto> listarActividadesDisponiblesSimples(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").ascending());
 
-    @Cacheable(value = "todasActividadesDisponibles")
-    public List<ActividadDisponibleDto> obtenerTodasActividadesDisponibles() {
-        log.info("Obteniendo todas las actividades disponibles");
-
+        // Usar una consulta más simple sin FETCH de relaciones complejas
         LocalDate hoy = LocalDate.now();
-        List<Actividad> actividades = actividadRepository.findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy);
+        Page<Actividad> actividadesPage = actividadRepository
+                .findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);
 
-        return actividades.stream()
-                .map(actividad -> {
-                    int inscripcionesActuales = inscripcionRepository.countByActividadId(actividad.getId());
-                    return new ActividadDisponibleDto(actividad, inscripcionesActuales);
-                })
-                .collect(Collectors.toList());
+        return actividadesPage.map(actividad -> {
+            int inscritos = inscripcionRepository.countByActividadId(actividad.getId());
+            return new ActividadDisponibleSimpleDto(actividad, inscritos);
+        });
     }
 
     @Transactional(readOnly = true)
