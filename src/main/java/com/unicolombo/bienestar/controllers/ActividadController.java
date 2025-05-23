@@ -172,10 +172,12 @@ public class ActividadController {
         try {
             Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+            log.info("Role {}", usuario.getRol());
 
-            if (usuario.getRol() == Role.INSTRUCTOR &&
-                    !usuario.getId().equals(instructorId)) {
-                throw new AccessDeniedException("Solo puedes ver tus propias actividades");
+            if (usuario.getRol() == Role.INSTRUCTOR) {
+                if(instructorId != instructorService.getInstructorIdByEmail(userDetails.getUsername())) {
+                    throw new AccessDeniedException("Solo puedes ver tus propias actividades");
+                }
             }
 
             Page<Actividad> actividades = actividadService.findByInstructorId(instructorId, page, size);
@@ -187,8 +189,7 @@ public class ActividadController {
                             "currentPage", actividades.getNumber(),
                             "totalItems", actividades.getTotalElements(),
                             "totalPages", actividades.getTotalPages()
-                    )
-            ));
+                    )));
         } catch (BusinessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", "error",
