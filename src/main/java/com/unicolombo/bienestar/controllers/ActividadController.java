@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleDto;
+
+import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.ActividadCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
@@ -369,53 +370,68 @@ public class ActividadController {
         }
     }
 
-    @Operation(summary = "Listar actividades disponibles para estudiantes",
-            description = "Muestra un listado simplificado de actividades disponibles con sus horarios y creador")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
-            @ApiResponse(responseCode = "500", description = "Error al procesar la solicitud")
-    })
-    @GetMapping("/estudiantes/actividades/disponibles")
-    public ResponseEntity<?> listarActividadesDisponibles(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String orderBy,
-            @RequestParam(required = false, defaultValue = "ASC") String direction) {
+   @Operation(summary = "Listar actividades disponibles para estudiantes",
+        description = "Muestra un listado simplificado de actividades disponibles con sus horarios y creador")
+@ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+        @ApiResponse(responseCode = "500", description = "Error al procesar la solicitud")
+})
+@GetMapping("/estudiantes/actividades/disponibles")
+public ResponseEntity<?> listarActividadesDisponiblesSimplificado(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String orderBy,
+        @RequestParam(required = false, defaultValue = "ASC") String direction) {
 
-        try {
-            log.info("Solicitando lista de actividades disponibles, página: {}, tamaño: {}", page, size);
+    try {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort sort = orderBy != null ?
+                Sort.by(sortDirection, orderBy) :
+                Sort.by(sortDirection, "fechaInicio");
 
-            Sort.Direction sortDirection = direction.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
-            Sort sort = orderBy != null ?
-                    Sort.by(sortDirection, orderBy) :
-                    Sort.by(sortDirection, "fechaInicio");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        // Cambio aquí: usar ActividadDisponibleSimpleDto
+        Page<ActividadDisponibleSimpleDto> actividades = actividadService.obtenerActividadesDisponiblesSimples(pageable);
 
-            Pageable pageable = PageRequest.of(page, size, sort);
+        List<Map<String, Object>> actividadesSimplificadas = actividades.getContent().stream()
+                .map(this::mapearActividadSimple)
+                .collect(Collectors.toList());
 
-            Page<ActividadDisponibleDto> actividades = actividadService.obtenerActividadesDisponiblesParaEstudiantes(pageable);
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("data", actividadesSimplificadas);
+        response.put("meta", Map.of(
+                "page", actividades.getNumber(),
+                "size", actividades.getSize(),
+                "totalElements", actividades.getTotalElements(),
+                "totalPages", actividades.getTotalPages(),
+                "first", actividades.isFirst(),
+                "last", actividades.isLast()
+        ));
 
-            log.info("Se encontraron {} actividades disponibles", actividades.getTotalElements());
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("data", actividades.getContent());
-            response.put("meta", Map.of(
-                    "page", actividades.getNumber(),
-                    "size", actividades.getSize(),
-                    "totalElements", actividades.getTotalElements(),
-                    "totalPages", actividades.getTotalPages(),
-                    "first", actividades.isFirst(),
-                    "last", actividades.isLast()
-            ));
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            log.error("Error inesperado al listar actividades disponibles", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                    "status", "error",
-                    "message", "Error al procesar la solicitud: " + e.getMessage()
-            ));
-        }
+        return ResponseEntity.ok(response);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "status", "error",
+                "message", "Error al procesar la solicitud: " + e.getMessage()
+        ));
     }
+}
+
+
+private Map<String, Object> mapearActividadSimple(ActividadDisponibleSimpleDto dto) {
+    Map<String, Object> actividadSimple = new LinkedHashMap<>();
+    actividadSimple.put("id", dto.getId());
+    actividadSimple.put("nombre", dto.getNombre());
+    actividadSimple.put("ubicacion", dto.getUbicacion());
+    actividadSimple.put("fechaInicio", dto.getFechaInicio());
+    actividadSimple.put("fechaFin", dto.getFechaFin());
+    actividadSimple.put("maxEstudiantes", dto.getMaxEstudiantes());
+    actividadSimple.put("inscripcionesActuales", dto.getInscripcionesActuales());
+    actividadSimple.put("cuposDisponibles", dto.getCuposDisponibles());
+    actividadSimple.put("instructor", dto.getInstructor());
+
+    return actividadSimple;
+}
+
 }

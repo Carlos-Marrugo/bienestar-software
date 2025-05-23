@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.*;
+import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Actividad;
@@ -238,7 +239,8 @@ public class EstudianteController {
             @RequestParam(defaultValue = "10") int size) {
 
         try {
-            Page<Actividad> actividades = actividadService.listarActividadesDisponibles(page, size);
+            Page<ActividadDisponibleSimpleDto> actividades =
+                    actividadService.listarActividadesDisponiblesSimples(page, size);
 
             return ResponseEntity.ok(Map.of(
                     "status", "success",
@@ -247,14 +249,17 @@ public class EstudianteController {
                             "total", actividades.getTotalElements(),
                             "page", page,
                             "size", size,
-                            "totalPages", actividades.getTotalPages()
+                            "totalPages", actividades.getTotalPages(),
+                            "hasNext", actividades.hasNext(),
+                            "hasPrevious", actividades.hasPrevious()
                     )
             ));
         } catch (Exception e) {
-//            log.error("Error al listar actividades disponibles", e);
+//            log.error("Error al listar actividades disponibles: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",
-                    "message", "Error al listar actividades disponibles"
+                    "message", "Error interno del servidor",
+                    "details", e.getMessage()
             ));
         }
     }
