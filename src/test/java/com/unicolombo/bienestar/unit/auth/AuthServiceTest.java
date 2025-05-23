@@ -1,4 +1,4 @@
-package com.unicolombo.bienestar.auth;
+package com.unicolombo.bienestar.unit.auth;
 
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Role;

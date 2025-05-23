@@ -1,4 +1,4 @@
-package com.unicolombo.bienestar.auth;
+package com.unicolombo.bienestar.unit.auth;
 
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
