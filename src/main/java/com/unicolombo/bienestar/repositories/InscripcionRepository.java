@@ -90,6 +90,17 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
             @Param("filtro") String filtro,
             Pageable pageable);
 
+    @Query("SELECT new com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto(" +
+            "e.id, e.codigoEstudiantil, CONCAT(u.nombre, ' ', u.apellido), " +
+            "e.programaAcademico, e.semestre, i.fechaInscripcion, e.horasAcumuladas) " +
+            "FROM Inscripcion i " +
+            "JOIN i.estudiante e " +
+            "JOIN e.usuario u " +
+            "WHERE i.actividad.instructor.id = :instructorId " +
+            "ORDER BY u.nombre ASC, u.apellido ASC")
+    Page<EstudianteInscritoDto> findEstudiantesInscritosByInstructorId(
+            @Param("instructorId") Long instructorId,
+            Pageable pageable);
 
 
 }

@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.InscripcionCreateDto;
+import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Inscripcion;
@@ -14,6 +15,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -258,5 +263,16 @@ public class InscripcionController {
                     "message", "Error al cancelar la inscripción: " + e.getMessage()
             ));
         }
+    }
+
+    @GetMapping("/instructores/{id}/estudiantes")
+    public ResponseEntity<Page<EstudianteInscritoDto>> getEstudiantesInscritos(
+            @PathVariable("id") Long instructorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<EstudianteInscritoDto> estudiantes = inscripcionService.getEstudiantesInscritosByInstructor(instructorId, pageable);
+        return ResponseEntity.ok(estudiantes);
     }
 }
