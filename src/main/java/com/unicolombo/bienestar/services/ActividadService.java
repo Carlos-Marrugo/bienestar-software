@@ -191,7 +191,6 @@ public class ActividadService {
     public Actividad editarActividad(Long id, ActividadCreateDto dto, String emailUsuario) {
         Actividad actividad = actividadRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
-
         if (!actividad.getHorarioUbicacion().getId().equals(dto.getHorarios().get(0).getHorarioUbicacionId())) {
             throw new BusinessException("No se puede cambiar el horario de una actividad existente");
         }
@@ -269,7 +268,6 @@ public class ActividadService {
     public Actividad findById(Long id) {
         Actividad actividad = actividadRepository.findByIdWithHorarios(id)
                 .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
-
         if (actividad.getHorarioUbicacion() == null && !actividad.getHorarios().isEmpty()) {
             actividad.setHorarioUbicacion(actividad.getHorarios().iterator().next());
         }

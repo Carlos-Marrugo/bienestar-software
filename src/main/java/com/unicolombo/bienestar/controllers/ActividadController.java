@@ -294,6 +294,7 @@ public class ActividadController {
             Map<String, Object> instructorMap = new LinkedHashMap<>();
             instructorMap.put("id", actividad.getInstructor().getId());
             instructorMap.put("nombre", actividad.getInstructor().getUsuario().getNombre());
+            instructorMap.put("apellido", actividad.getInstructor().getUsuario().getApellido());
             dto.put("instructor", instructorMap);
         }
 

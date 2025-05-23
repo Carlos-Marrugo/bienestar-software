@@ -204,6 +204,10 @@ public class InscripcionService {
     }
 
     public Page<EstudianteInscritoDto> getEstudiantesInscritosByInstructor(Long instructorId, Pageable pageable) {
-        return inscripcionRepository.findEstudiantesInscritosByInstructorId(instructorId, pageable);
+        Page<EstudianteInscritoDto> page = inscripcionRepository.findEstudiantesInscritosByInstructorId(instructorId, pageable);
+        if (page.isEmpty()) {
+            throw new BusinessException("No se encontraron estudiantes inscritos para el instructor con ID: " + instructorId);
+        }
+        return page;
     }
 }
