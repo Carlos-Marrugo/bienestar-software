@@ -1,124 +1,88 @@
 package com.unicolombo.bienestar.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
-@Table(name = "actividades")
-@Data
+@Table(name = "actividad")
+@Getter
+@Setter
+@ToString(exclude = {"horarios", "horariosEspecificos"})
 public class Actividad {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String nombre;
 
-    @Column(nullable = false)
-    private String ubicacion;
+    @ManyToOne
+    @JoinColumn(name = "horario_ubicacion_id")
+    @JsonIgnoreProperties({"actividades", "horariosEspecificos"})
+    private HorarioUbicacion horarioUbicacion;
 
-    @Column(nullable = false, name = "fecha_inicio")
+    @ManyToOne
+    @JoinColumn(name = "ubicacion_id")
+    private Ubicacion ubicacion;
+
     private LocalDate fechaInicio;
-
-    @Column(nullable = false)
     private LocalDate fechaFin;
-
-    @Column(nullable = false, name = "hora_inicio")
-    private LocalTime horaInicio;
-
-    @Column(name = "hora_fin")
-    private LocalTime horaFin;
-
-    @Column(nullable = false, name = "max_estudiantes")
     private Integer maxEstudiantes;
 
     @ManyToOne
-    @JsonIgnoreProperties("actividades")
-    @JoinColumn(name = "instructor_id", referencedColumnName = "id")
+    @JoinColumn(name = "instructor_id")
+    @JsonIgnoreProperties({"usuario", "actividades"})
     private Instructor instructor;
 
+    @ManyToMany
+    @JoinTable(
+            name = "actividad_horarios",
+            joinColumns = @JoinColumn(name = "actividad_id"),
+            inverseJoinColumns = @JoinColumn(name = "horario_id")
+    )
+    @JsonIgnoreProperties({"ubicacion", "actividades"})
+    private Set<HorarioUbicacion> horarios = new HashSet<>();
+
     @OneToMany(mappedBy = "actividad", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("actividad")
-    private List<AuditoriaActividad> auditorias = new ArrayList<>();
+    @JsonIgnoreProperties({"actividad", "horarioBase"})
+    private Set<HorarioActividad> horariosEspecificos = new HashSet<>();
 
-    
+    @Transient
+    @JsonIgnore
+    private List<String> warnings = new ArrayList<>();
 
-    public Long getId() {
-        return id;
+    public void addWarning(String warning) {
+        if (this.warnings == null) {
+            this.warnings = new ArrayList<>();
+        }
+        this.warnings.add(warning);
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public List<String> getWarnings() {
+        return warnings != null ? warnings : new ArrayList<>();
     }
 
-    public String getNombre() {
-        return nombre;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Actividad actividad = (Actividad) o;
+        return id != null && id.equals(actividad.id);
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 
-    public String getUbicacion() {
-        return ubicacion;
-    }
 
-    public void setUbicacion(String ubicacion) {
-        this.ubicacion = ubicacion;
-    }
-
-    public LocalDate getFechaInicio() {
-        return fechaInicio;
-    }
-
-    public void setFechaInicio(LocalDate fechaInicio) {
-        this.fechaInicio = fechaInicio;
-    }
-
-    public LocalDate getFechaFin() {
-        return fechaFin;
-    }
-
-    public void setFechaFin(LocalDate fechaFin) {
-        this.fechaFin = fechaFin;
-    }
-
-    public LocalTime getHoraInicio() {
-        return horaInicio;
-    }
-
-    public void setHoraInicio(LocalTime horaInicio) {
-        this.horaInicio = horaInicio;
-    }
-
-    public LocalTime getHoraFin() {
-        return horaFin;
-    }
-
-    public void setHoraFin(LocalTime horaFin) {
-        this.horaFin = horaFin;
-    }
-
-    public Integer getMaxEstudiantes() {
-        return maxEstudiantes;
-    }
-
-    public void setMaxEstudiantes(Integer maxEstudiantes) {
-        this.maxEstudiantes = maxEstudiantes;
-    }
-
-    public Instructor getInstructor() {
-        return instructor;
-    }
-
-    public void setInstructor(Instructor instructor) {
-        this.instructor = instructor;
-    }
 }

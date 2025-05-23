@@ -4,7 +4,6 @@ import com.unicolombo.bienestar.filters.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -18,9 +17,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -37,26 +33,25 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir Swagger y recursos públicos
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/api/auth/**",
-                                "/api/estudiantes/registro"
-                        ).permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/estudiantes/registro"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/actividades").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/*").hasAnyRole("INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/actividades").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/actividades/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/actividades/*").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/actividades/creadas").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/actividades/instructor/**")
-                        .hasAnyRole("INSTRUCTOR", "ADMIN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/estudiantes/**").hasRole("ESTUDIANTE")
-                        .requestMatchers("/api/actividades/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/inscripciones").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.GET, "/api/inscripciones/estudiante").hasRole("ESTUDIANTE")
 
+                        .requestMatchers(HttpMethod.GET, "/api/auditoria/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/admin/instructores/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/admin/mi-perfil").hasRole("INSTRUCTOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/admin/mi-perfil").hasRole("INSTRUCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/instructor/mis-actividades/*/estudiantes").hasRole("INSTRUCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/admin/mis-actividades/*/estudiantes").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -64,8 +59,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -82,11 +75,13 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
-                "http://192.168.18.20:5173"
+                "https://bienestar-front.onrender.com"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

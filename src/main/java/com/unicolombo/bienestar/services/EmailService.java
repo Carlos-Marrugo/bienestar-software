@@ -72,12 +72,46 @@ public class EmailService {
         );
     }
 
+    public void sendPasswordResetEmail(String toEmail, String nombre, String resetUrl) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("nombre", nombre);
+        variables.put("url", resetUrl);
+
+        sendTemplateEmail(
+                toEmail,
+                "Restablece tu contraseña - Bienestar Unicolombo",
+                "emails/reset-password",
+                variables
+        );
+
+        log.info("Correo de restablecimiento enviado a: {}", toEmail);
+    }
+
+
+    public void sendHtmlEmail(String toEmail, String subject, String htmlContent) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            InternetAddress fromAddress = new InternetAddress(fromEmail, "Sistema de Bienestar Unicolombo");
+            helper.setFrom(fromAddress);
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Correo HTML enviado exitosamente a: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Error al enviar correo HTML a {}: {}", toEmail, e.getMessage());
+            throw new EmailServiceException("Error al enviar el correo electrónico", e);
+        }
+    }
+
     private void sendTemplateEmail(String to, String subject, String template, Map<String, Object> variables) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // Configuración explícita del remitente
             InternetAddress fromAddress = new InternetAddress(fromEmail, "Sistema de Bienestar Unicolombo");
             helper.setFrom(fromAddress);
             helper.setTo(to);
@@ -100,8 +134,6 @@ public class EmailService {
         } catch (Exception e) {
             log.error("Error inesperado al enviar correo: {}", e.getMessage());
             throw new EmailServiceException("Error interno del servidor", e);
-
         }
     }
-
 }

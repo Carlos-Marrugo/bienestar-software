@@ -1,61 +1,72 @@
 package com.unicolombo.bienestar.dto;
 
-
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
-@Data
+@ToString
 public class ActividadCreateDto {
-
     @NotBlank(message = "El nombre es obligatorio")
+    @Size(max = 100, message = "El nombre no puede exceder los 100 caracteres")
     private String nombre;
 
-    @NotBlank(message = "Ubicacion es obligatoria")
-    private String ubicacion;
-
     @NotNull(message = "La fecha de inicio es obligatoria")
+    @FutureOrPresent(message = "La fecha de inicio debe ser hoy o en el futuro")
     private LocalDate fechaInicio;
 
+    @FutureOrPresent(message = "La fecha de fin debe ser hoy o en el futuro")
     private LocalDate fechaFin;
 
-    @NotNull(message = "La hora de inicio es obligatoria")
-    private LocalTime horaInicio;
-
-    private LocalTime horaFin;
-
-    @AssertTrue(message = "La fecha de fin debe ser posterior a la fecha de inicio")
-    public boolean isFechaFinValid() {
-        return fechaFin == null || !fechaFin.isBefore(fechaInicio);
-    }
-
-    @AssertTrue(message = "La hora de fin debe ser posterior a la hora de inicio")
-    public boolean isHoraFinValid() {
-        if (horaFin == null || horaInicio == null) return true;
-        return !horaFin.isBefore(horaInicio);
-    }
-
-    @NotNull(message = "El maximo de estudiantes es obligatorio")
-    @Min(value = 1, message = "Debe tener al menos 1 estudiante")
+    @NotNull(message = "La capacidad máxima es obligatoria")
+    @Min(value = 5, message = "La capacidad mínima es de 5 estudiantes")
     private Integer maxEstudiantes;
+
+    @NotNull(message = "El ID de la ubicación es obligatorio")
+    private Long ubicacionId;
 
     @NotNull(message = "El ID del instructor es obligatorio")
     private Long instructorId;
 
-    public ActividadCreateDto(String nombre, String ubicacion, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Integer maxEstudiantes, Long instructorId) {
-        this.nombre = nombre;
-        this.ubicacion = ubicacion;
-        this.fechaInicio = fechaInicio;
-        this.fechaFin = fechaFin;
-        this.horaInicio = horaInicio;
-        this.horaFin = horaFin;
-        this.maxEstudiantes = maxEstudiantes;
-        this.instructorId = instructorId;
+    @NotEmpty(message = "Debe incluir al menos un horario")
+    private List<HorarioActividadDto> horarios;
+
+    public static class HorarioActividadDto {
+        @NotNull(message = "El ID del horario base es obligatorio")
+        private Long horarioUbicacionId;
+
+        @NotNull(message = "La hora de inicio es obligatoria")
+        private LocalTime horaInicio;
+
+        @NotNull(message = "La hora de fin es obligatoria")
+        private LocalTime horaFin;
+
+        public Long getHorarioUbicacionId() {
+            return horarioUbicacionId;
+        }
+
+        public void setHorarioUbicacionId(Long horarioUbicacionId) {
+            this.horarioUbicacionId = horarioUbicacionId;
+        }
+
+        public LocalTime getHoraInicio() {
+            return horaInicio;
+        }
+
+        public void setHoraInicio(LocalTime horaInicio) {
+            this.horaInicio = horaInicio;
+        }
+
+        public LocalTime getHoraFin() {
+            return horaFin;
+        }
+
+        public void setHoraFin(LocalTime horaFin) {
+            this.horaFin = horaFin;
+        }
     }
 
     public String getNombre() {
@@ -64,14 +75,6 @@ public class ActividadCreateDto {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
-    }
-
-    public String getUbicacion() {
-        return ubicacion;
-    }
-
-    public void setUbicacion(String ubicacion) {
-        this.ubicacion = ubicacion;
     }
 
     public LocalDate getFechaInicio() {
@@ -90,22 +93,6 @@ public class ActividadCreateDto {
         this.fechaFin = fechaFin;
     }
 
-    public LocalTime getHoraInicio() {
-        return horaInicio;
-    }
-
-    public void setHoraInicio(LocalTime horaInicio) {
-        this.horaInicio = horaInicio;
-    }
-
-    public LocalTime getHoraFin() {
-        return horaFin;
-    }
-
-    public void setHoraFin(LocalTime horaFin) {
-        this.horaFin = horaFin;
-    }
-
     public Integer getMaxEstudiantes() {
         return maxEstudiantes;
     }
@@ -114,11 +101,27 @@ public class ActividadCreateDto {
         this.maxEstudiantes = maxEstudiantes;
     }
 
+    public Long getUbicacionId() {
+        return ubicacionId;
+    }
+
+    public void setUbicacionId(Long ubicacionId) {
+        this.ubicacionId = ubicacionId;
+    }
+
     public Long getInstructorId() {
         return instructorId;
     }
 
     public void setInstructorId(Long instructorId) {
         this.instructorId = instructorId;
+    }
+
+    public List<HorarioActividadDto> getHorarios() {
+        return horarios;
+    }
+
+    public void setHorarios(List<HorarioActividadDto> horarios) {
+        this.horarios = horarios;
     }
 }

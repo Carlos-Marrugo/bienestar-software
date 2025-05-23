@@ -16,6 +16,8 @@ public class Instructor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    String email;
+
     @OneToOne
     @JsonIgnoreProperties("instructor")
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
@@ -28,7 +30,7 @@ public class Instructor {
     private LocalDate fechaContratacion;
 
     @OneToMany(mappedBy = "instructor", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("instructor")
+    @JsonIgnoreProperties({"instructor", "asistencias"})
     private List<Actividad> actividades = new ArrayList<>();
 
 
@@ -36,4 +38,63 @@ public class Instructor {
         return usuario.getNombre() + " " + usuario.getApellido();
     }
 
+    @OneToMany(mappedBy = "instructor")
+    @JsonIgnoreProperties({"instructor", "actividad"})
+    private List<Asistencia> asistenciasRegistradas = new ArrayList<>();
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
+    }
+
+    public String getEspecialidad() {
+        return especialidad;
+    }
+
+    public void setEspecialidad(String especialidad) {
+        this.especialidad = especialidad;
+    }
+
+    public LocalDate getFechaContratacion() {
+        return fechaContratacion;
+    }
+
+    public void setFechaContratacion(LocalDate fechaContratacion) {
+        this.fechaContratacion = fechaContratacion;
+    }
+
+    public List<Actividad> getActividades() {
+        return actividades;
+    }
+
+    public void setActividades(List<Actividad> actividades) {
+        this.actividades = actividades;
+    }
+
+    public List<Asistencia> getAsistenciasRegistradas() {
+        return asistenciasRegistradas;
+    }
+
+    public void setAsistenciasRegistradas(List<Asistencia> asistenciasRegistradas) {
+        this.asistenciasRegistradas = asistenciasRegistradas;
+    }
 }
