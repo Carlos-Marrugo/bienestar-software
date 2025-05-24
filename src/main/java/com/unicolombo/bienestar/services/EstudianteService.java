@@ -1,13 +1,12 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.dto.estudiante.*;
+import com.unicolombo.bienestar.dto.request.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +16,6 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 import static com.unicolombo.bienestar.models.EstadoEstudiante.INACTIVO;
-import static com.unicolombo.bienestar.models.EstadoEstudiante.SUSPENDIDO;
 
 
 @Service

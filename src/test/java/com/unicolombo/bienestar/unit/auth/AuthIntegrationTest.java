@@ -1,6 +1,6 @@
 package com.unicolombo.bienestar.unit.auth;
 
-import com.unicolombo.bienestar.dto.LoginRequest;
+import com.unicolombo.bienestar.dto.request.LoginRequest;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import org.junit.jupiter.api.BeforeAll;

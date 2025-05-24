@@ -1,8 +1,8 @@
 package com.unicolombo.bienestar.controllers;
 
 
-import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
-import com.unicolombo.bienestar.dto.ActividadCreateDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
@@ -10,8 +10,6 @@ import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.ActividadService;
 import com.unicolombo.bienestar.services.InstructorService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,6 +1,5 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.dto.RefreshTokenRequest;
 import com.unicolombo.bienestar.models.RefreshToken;
 import com.unicolombo.bienestar.models.Usuario;
 import com.unicolombo.bienestar.repositories.RefreshTokenRepository;
@@ -9,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.beans.Transient;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;

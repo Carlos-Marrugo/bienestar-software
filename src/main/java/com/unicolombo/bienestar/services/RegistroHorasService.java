@@ -1,8 +1,7 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.controllers.InscripcionController;
-import com.unicolombo.bienestar.dto.RegistroAsistenciaDto;
-import com.unicolombo.bienestar.dto.RegistroHorasDto;
+import com.unicolombo.bienestar.dto.request.estudiante.RegistroAsistenciaDto;
+import com.unicolombo.bienestar.dto.request.estudiante.RegistroHorasDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;

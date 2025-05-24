@@ -1,10 +1,8 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.*;
-import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
-import com.unicolombo.bienestar.dto.estudiante.*;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
+import com.unicolombo.bienestar.dto.request.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
-import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.EstadoEstudiante;
 import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Usuario;
@@ -14,7 +12,6 @@ import com.unicolombo.bienestar.services.ActividadService;
 import com.unicolombo.bienestar.services.EstudianteService;
 import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.services.JwtService;
-import com.unicolombo.bienestar.utils.ResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -28,15 +25,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController

@@ -1,7 +1,5 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.dto.ActividadCreateDto;
-import com.unicolombo.bienestar.dto.AuditoriaCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.AuditoriaActividad;
@@ -12,7 +10,6 @@ import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 

@@ -1,8 +1,8 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.Actividad.HorarioUbicacionDto;
-import com.unicolombo.bienestar.dto.Actividad.UbicacionDto;
-import com.unicolombo.bienestar.dto.CambiarEstadoRequest;
+import com.unicolombo.bienestar.dto.request.actividad.HorarioUbicacionDto;
+import com.unicolombo.bienestar.dto.request.actividad.UbicacionDto;
+import com.unicolombo.bienestar.dto.request.estudiante.CambiarEstadoRequest;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;

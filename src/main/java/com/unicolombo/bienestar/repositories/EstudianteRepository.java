@@ -1,6 +1,5 @@
 package com.unicolombo.bienestar.repositories;
 
-import com.unicolombo.bienestar.dto.estudiante.HorasActividadDto;
 import com.unicolombo.bienestar.models.EstadoEstudiante;
 import com.unicolombo.bienestar.models.Estudiante;
 import org.springframework.data.domain.Page;
