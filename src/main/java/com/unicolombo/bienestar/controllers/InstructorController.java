@@ -1,10 +1,12 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.*;
-import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudianteDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
-import com.unicolombo.bienestar.models.Actividad;
+import com.unicolombo.bienestar.dto.request.instructor.RegistroInstructorDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadInstructorDto;
+import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
+import com.unicolombo.bienestar.dto.request.instructor.InstructorAdminUpdateDto;
+import com.unicolombo.bienestar.dto.request.instructor.InstructorListDto;
+import com.unicolombo.bienestar.dto.request.instructor.InstructorPerfilDto;
+import com.unicolombo.bienestar.dto.request.instructor.InstructorSelfUpdateDto;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.repositories.InstructorRepository;
 import com.unicolombo.bienestar.services.ActividadService;
@@ -14,8 +16,6 @@ import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.services.JwtService;
 import com.unicolombo.bienestar.utils.ResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")

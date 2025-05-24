@@ -1,14 +1,14 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.dto.*;
-import com.unicolombo.bienestar.dto.Actividad.ActividadInstructorDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudianteDto;
+import com.unicolombo.bienestar.dto.request.instructor.RegistroInstructorDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadInstructorDto;
+import com.unicolombo.bienestar.dto.request.estudiante.EstudianteDto;
+import com.unicolombo.bienestar.dto.request.instructor.*;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

@@ -1,9 +1,9 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.LoginEstudianteRequest;
-import com.unicolombo.bienestar.dto.LoginRequest;
-import com.unicolombo.bienestar.dto.RefreshTokenRequest;
-import com.unicolombo.bienestar.dto.ResetPasswordRequest;
+import com.unicolombo.bienestar.dto.request.estudiante.LoginEstudianteRequest;
+import com.unicolombo.bienestar.dto.request.LoginRequest;
+import com.unicolombo.bienestar.dto.request.RefreshTokenRequest;
+import com.unicolombo.bienestar.dto.request.ResetPasswordRequest;
 import com.unicolombo.bienestar.models.RefreshToken;
 import com.unicolombo.bienestar.models.Role;
 import com.unicolombo.bienestar.models.Usuario;
