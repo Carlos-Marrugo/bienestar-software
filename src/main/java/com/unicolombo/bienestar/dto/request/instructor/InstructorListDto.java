@@ -10,6 +10,7 @@ public class InstructorListDto {
     private String nombreCompleto;
     private String especialidad;
     private LocalDate fechaContratacion;
+    private String fotoPerfil;
 
     // Constructor que toma un Instructor
     public InstructorListDto(Instructor instructor) {
@@ -18,10 +19,19 @@ public class InstructorListDto {
         this.nombreCompleto = instructor.getNombreCompleto();
         this.especialidad = instructor.getEspecialidad();
         this.fechaContratacion = instructor.getFechaContratacion();
+        this.fotoPerfil = instructor.getFotoPerfil();
     }
 
     // Getters
 
+
+    public String getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public void setFotoPerfil(String fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
+    }
 
     public String getEmail() {
         return email;

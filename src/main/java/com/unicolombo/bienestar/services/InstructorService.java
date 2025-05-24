@@ -28,6 +28,7 @@ public class InstructorService {
     private final InstructorRepository instructorRepository;
     private final ActividadRepository actividadRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ImageService imageService;
 
     @Autowired
     private InscripcionRepository inscripcionRepository;
@@ -50,7 +51,8 @@ public class InstructorService {
         instructor.setEspecialidad(dto.getEspecialidad());
         ZoneId zonaColombia = ZoneId.of("America/Bogota");
         instructor.setFechaContratacion(LocalDate.now(zonaColombia));
-
+        String fotoPerfil = getUrlImg(usuario);
+        instructor.setFotoPerfil(fotoPerfil);
         return instructorRepository.save(instructor);
     }
 
@@ -196,5 +198,9 @@ public class InstructorService {
         return instructorRepository.save(instructor);
     }
 
+    private String getUrlImg(Usuario usuario){
+        String initials = usuario.getNombre().substring(0, 1).toUpperCase() + usuario.getApellido().substring(0,1).toUpperCase();
+        return imageService.uploadInitialsImage(initials, usuario.getUsername());
+    }
 
 }

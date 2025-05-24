@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,8 @@ public class Instructor {
     @OneToMany(mappedBy = "instructor")
     @JsonIgnoreProperties({"instructor", "actividad"})
     private List<Asistencia> asistenciasRegistradas = new ArrayList<>();
+
+    private String fotoPerfil;
 
     public String getEmail() {
         return email;
