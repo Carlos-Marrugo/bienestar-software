@@ -1,8 +1,8 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.Actividad.HorarioUbicacionDto;
-import com.unicolombo.bienestar.dto.Actividad.UbicacionDto;
-import com.unicolombo.bienestar.dto.CambiarEstadoRequest;
+import com.unicolombo.bienestar.dto.request.actividad.HorarioUbicacionDto;
+import com.unicolombo.bienestar.dto.request.actividad.UbicacionDto;
+import com.unicolombo.bienestar.dto.request.estudiante.CambiarEstadoRequest;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
@@ -22,6 +22,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,7 +48,22 @@ public class UbicacionController {
     @GetMapping
     @Operation(summary = "Listar ubicaciones activas")
     public ResponseEntity<?> listarUbicaciones() {
-        return ResponseEntity.ok(Map.of("data", ubicacionService.listarUbicacionesActivas()));
+        try {
+            List<?> ubicaciones = ubicacionService.listarUbicacionesActivas();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", ubicaciones);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "status", "error",
+                    "message", "Error interno del servidor",
+                    "details", e.getMessage()
+            ));
+        }
     }
 
     @Operation(summary = "Obtener horarios en uso de una ubicación")

@@ -1,8 +1,8 @@
 package com.unicolombo.bienestar.controllers;
 
 
-import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
-import com.unicolombo.bienestar.dto.ActividadCreateDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadCreateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
@@ -10,8 +10,6 @@ import com.unicolombo.bienestar.repositories.UsuarioRepository;
 import com.unicolombo.bienestar.services.ActividadService;
 import com.unicolombo.bienestar.services.InstructorService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -370,53 +368,55 @@ public class ActividadController {
         }
     }
 
-   @Operation(summary = "Listar actividades disponibles para estudiantes",
-        description = "Muestra un listado simplificado de actividades disponibles con sus horarios y creador")
-@ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Listado exitoso"),
-        @ApiResponse(responseCode = "500", description = "Error al procesar la solicitud")
-})
-@GetMapping("/estudiantes/actividades/disponibles")
-public ResponseEntity<?> listarActividadesDisponiblesSimplificado(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) String orderBy,
-        @RequestParam(required = false, defaultValue = "ASC") String direction) {
+    @Operation(summary = "Listar actividades disponibles para estudiantes",
+            description = "Muestra un listado simplificado de actividades disponibles con sus horarios y creador")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+            @ApiResponse(responseCode = "500", description = "Error al procesar la solicitud")
+    })
+    @GetMapping("/estudiantes/actividades/disponibles")
+    public ResponseEntity<?> listarActividadesDisponiblesSimplificado(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String orderBy,
+            @RequestParam(required = false, defaultValue = "ASC") String direction) {
 
-    try {
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Sort sort = orderBy != null ?
-                Sort.by(sortDirection, orderBy) :
-                Sort.by(sortDirection, "fechaInicio");
+        try {
+            int pageIndex = page - 1;
+            if (pageIndex < 0) pageIndex = 0;
 
-        Pageable pageable = PageRequest.of(page, size, sort);
-        // Cambio aquí: usar ActividadDisponibleSimpleDto
-        Page<ActividadDisponibleSimpleDto> actividades = actividadService.obtenerActividadesDisponiblesSimples(pageable);
+            Sort.Direction sortDirection = direction.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
+            Sort sort = orderBy != null ?
+                    Sort.by(sortDirection, orderBy) :
+                    Sort.by(sortDirection, "fechaInicio");
 
-        List<Map<String, Object>> actividadesSimplificadas = actividades.getContent().stream()
-                .map(this::mapearActividadSimple)
-                .collect(Collectors.toList());
+            Pageable pageable = PageRequest.of(pageIndex, size, sort);
+            Page<ActividadDisponibleSimpleDto> actividades = actividadService.obtenerActividadesDisponiblesSimples(pageable);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "success");
-        response.put("data", actividadesSimplificadas);
-        response.put("meta", Map.of(
-                "page", actividades.getNumber(),
-                "size", actividades.getSize(),
-                "totalElements", actividades.getTotalElements(),
-                "totalPages", actividades.getTotalPages(),
-                "first", actividades.isFirst(),
-                "last", actividades.isLast()
-        ));
+            List<Map<String, Object>> actividadesSimplificadas = actividades.getContent().stream()
+                    .map(this::mapearActividadSimple)
+                    .collect(Collectors.toList());
 
-        return ResponseEntity.ok(response);
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "status", "error",
-                "message", "Error al procesar la solicitud: " + e.getMessage()
-        ));
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", actividadesSimplificadas);
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("totalItems", actividades.getTotalElements());
+            pagination.put("currentPage", page);
+            pagination.put("totalPages", actividades.getTotalPages());
+
+            response.put("pagination", pagination);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "Error al procesar la solicitud: " + e.getMessage()
+            ));
+        }
     }
-}
 
 
 private Map<String, Object> mapearActividadSimple(ActividadDisponibleSimpleDto dto) {

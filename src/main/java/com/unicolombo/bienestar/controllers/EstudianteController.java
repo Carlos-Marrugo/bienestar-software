@@ -1,11 +1,9 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.*;
-import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
-import com.unicolombo.bienestar.dto.Actividad.ActividadEstudianteDto;
-import com.unicolombo.bienestar.dto.estudiante.*;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadEstudianteDto;
+import com.unicolombo.bienestar.dto.request.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
-import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.EstadoEstudiante;
 import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Usuario;
@@ -15,7 +13,6 @@ import com.unicolombo.bienestar.services.ActividadService;
 import com.unicolombo.bienestar.services.EstudianteService;
 import com.unicolombo.bienestar.services.InstructorService;
 import com.unicolombo.bienestar.services.JwtService;
-import com.unicolombo.bienestar.utils.ResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -27,17 +24,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -241,23 +235,27 @@ public class EstudianteController {
             @RequestParam(defaultValue = "10") int size) {
 
         try {
-            Page<ActividadDisponibleSimpleDto> actividades =
-                    actividadService.listarActividadesDisponiblesSimples(page, size);
+            int pageIndex = page - 1;
+            if (pageIndex < 0) pageIndex = 0;
 
-            return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "data", actividades.getContent(),
-                    "meta", Map.of(
-                            "total", actividades.getTotalElements(),
-                            "page", page,
-                            "size", size,
-                            "totalPages", actividades.getTotalPages(),
-                            "hasNext", actividades.hasNext(),
-                            "hasPrevious", actividades.hasPrevious()
-                    )
-            ));
+            Page<ActividadDisponibleSimpleDto> actividades =
+                    actividadService.listarActividadesDisponiblesSimples(pageIndex, size);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", actividades.getContent());
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("totalItems", actividades.getTotalElements());
+            pagination.put("currentPage", page);
+            pagination.put("totalPages", actividades.getTotalPages());
+
+            response.put("pagination", pagination);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-//            log.error("Error al listar actividades disponibles: {}", e.getMessage());
+            // log.error("Error al listar actividades disponibles: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",
                     "message", "Error interno del servidor",
@@ -277,24 +275,41 @@ public class EstudianteController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
+            int pageIndex = page - 1;
+            if (pageIndex < 0) pageIndex = 0;
+
             Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
             Page<EstudianteInscritoDto> estudiantes = actividadService.getEstudiantesInscritosEnActividad(
                     actividadId,
                     instructorId,
                     filtro,
-                    PageRequest.of(page, size));
+                    PageRequest.of(pageIndex, size));
 
-            Map<String, Object> paginationInfo = new LinkedHashMap<>();
-            paginationInfo.put("totalItems", estudiantes.getTotalElements());
-            paginationInfo.put("totalPages", estudiantes.getTotalPages());
-            paginationInfo.put("currentPage", estudiantes.getNumber());
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", estudiantes.getContent());
 
-            return ResponseEntity.ok(ResponseWrapper.success(
-                    estudiantes.getContent(),
-                    "Estudiantes inscritos obtenidos"));
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("totalItems", estudiantes.getTotalElements());
+            pagination.put("currentPage", page);
+            pagination.put("totalPages", estudiantes.getTotalPages());
+
+            response.put("pagination", pagination);
+            response.put("status", "success");
+
+            return ResponseEntity.ok(response);
+
         } catch (BusinessException e) {
             return ResponseEntity.status(e.getStatus() != null ? e.getStatus() : HttpStatus.BAD_REQUEST)
-                    .body(ResponseWrapper.error(e.getMessage()));
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage()
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "status", "error",
+                    "message", "Error interno del servidor",
+                    "details", e.getMessage()
+            ));
         }
     }
 

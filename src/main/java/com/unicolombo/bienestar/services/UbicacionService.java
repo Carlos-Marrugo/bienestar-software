@@ -1,7 +1,7 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.dto.Actividad.HorarioUbicacionDto;
-import com.unicolombo.bienestar.dto.Actividad.UbicacionDto;
+import com.unicolombo.bienestar.dto.request.actividad.HorarioUbicacionDto;
+import com.unicolombo.bienestar.dto.request.actividad.UbicacionDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 

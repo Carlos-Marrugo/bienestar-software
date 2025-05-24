@@ -1,6 +1,6 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.AuditoriaDto;
+import com.unicolombo.bienestar.dto.request.actividad.AuditoriaDto;
 import com.unicolombo.bienestar.services.AuditoriaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

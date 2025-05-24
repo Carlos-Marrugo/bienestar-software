@@ -1,8 +1,8 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.InscripcionCreateDto;
-import com.unicolombo.bienestar.dto.ResponseDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
+import com.unicolombo.bienestar.dto.request.inscripcion.InscripcionCreateDto;
+import com.unicolombo.bienestar.dto.response.ResponseDto;
+import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.UsuarioRepository;
@@ -73,7 +73,6 @@ public class InscripcionController {
 
             Inscripcion inscripcion = inscripcionService.crearInscripcion(dto, userDetails.getUsername());
 
-            // Crear una respuesta más detallada que incluya la información de horarios
             Map<String, Object> respuesta = new HashMap<>();
             respuesta.put("status", "success");
             respuesta.put("message", "Inscripción creada exitosamente");
@@ -84,7 +83,6 @@ public class InscripcionController {
             data.put("actividadId", inscripcion.getActividad().getId());
             data.put("fechaInscripcion", inscripcion.getFechaInscripcion());
 
-            // Añadir información de horarios si existe
             if (inscripcion.getActividad().getUbicacion() != null &&
                     inscripcion.getActividad().getUbicacion().getHorarios() != null) {
 
@@ -172,7 +170,6 @@ public class InscripcionController {
                                 "horasRegistradas", inscripcion.getHorasRegistradas()
                         ));
 
-                        // Añadir información de horarios si existe
                         if (inscripcion.getActividad().getUbicacion() != null &&
                                 inscripcion.getActividad().getUbicacion().getHorarios() != null) {
 

@@ -1,7 +1,7 @@
 package com.unicolombo.bienestar.services;
 
-import com.unicolombo.bienestar.dto.InscripcionCreateDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
+import com.unicolombo.bienestar.dto.request.inscripcion.InscripcionCreateDto;
+import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;

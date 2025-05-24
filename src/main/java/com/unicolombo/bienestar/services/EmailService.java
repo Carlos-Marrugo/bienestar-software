@@ -20,6 +20,7 @@ import java.util.HashMap;
 @Slf4j
 public class EmailService {
 
+
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 

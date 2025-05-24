@@ -1,14 +1,13 @@
 package com.unicolombo.bienestar.repositories;
 
-import com.unicolombo.bienestar.dto.Actividad.ActividadEstudianteDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadEstudianteDto;
+import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Estudiante;
 import com.unicolombo.bienestar.models.Inscripcion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -57,7 +56,7 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
             @Param("filtro") String filtro,
             Pageable pageable);
 
-    @Query("SELECT new com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto(" +
+    @Query("SELECT new com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto(" +
             "e.id, e.codigoEstudiantil, " +
             "CONCAT(u.nombre, ' ', u.apellido), " +
             "e.programaAcademico, e.semestre, " +
@@ -72,7 +71,7 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
             @Param("actividadId") Long actividadId,
             Pageable pageable);
 
-    @Query("SELECT new com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto(" +
+    @Query("SELECT new com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto(" +
             "e.id, e.codigoEstudiantil, " +
             "CONCAT(u.nombre, ' ', u.apellido), " +
             "e.programaAcademico, e.semestre, " +
@@ -91,7 +90,7 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
             @Param("filtro") String filtro,
             Pageable pageable);
 
-    @Query("SELECT new com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto(" +
+    @Query("SELECT new com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto(" +
             "e.id, e.codigoEstudiantil, CONCAT(u.nombre, ' ', u.apellido), " +
             "e.programaAcademico, e.semestre, i.fechaInscripcion, e.horasAcumuladas) " +
             "FROM Inscripcion i " +
@@ -103,11 +102,9 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
             @Param("instructorId") Long instructorId,
             Pageable pageable);
 
-    //@Query("SELECT i.actividad FROM Inscripcion i WHERE i.estudiante.id = :estudianteId")
-    //Page<Actividad> findActividadesByEstudianteId(@Param("estudianteId") Long estudianteId, Pageable pageable);
 
     @Query("""
-        SELECT new com.unicolombo.bienestar.dto.Actividad.ActividadEstudianteDto(
+        SELECT new com.unicolombo.bienestar.dto.request.actividad.ActividadEstudianteDto(
             a.id,
             a.nombre,
             a.fechaInicio,

@@ -1,10 +1,10 @@
 package com.unicolombo.bienestar.services;
 
 
-import com.unicolombo.bienestar.dto.Actividad.ActividadDisponibleSimpleDto;
-import com.unicolombo.bienestar.dto.Actividad.ActividadEstudianteDto;
-import com.unicolombo.bienestar.dto.ActividadCreateDto;
-import com.unicolombo.bienestar.dto.estudiante.EstudianteInscritoDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadCreateDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadEstudianteDto;
+import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
@@ -19,14 +19,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -296,7 +293,6 @@ public class ActividadService {
     public Page<ActividadDisponibleSimpleDto> listarActividadesDisponiblesSimples(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").ascending());
 
-        // Usar una consulta más simple sin FETCH de relaciones complejas
         LocalDate hoy = LocalDate.now();
         Page<Actividad> actividadesPage = actividadRepository
                 .findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);
