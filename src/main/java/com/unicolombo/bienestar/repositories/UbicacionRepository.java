@@ -2,6 +2,8 @@ package com.unicolombo.bienestar.repositories;
 
 import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,4 +39,7 @@ public interface UbicacionRepository extends JpaRepository<Ubicacion, Long> {
 
     @Query("SELECT h FROM HorarioUbicacion h WHERE h.id = :id")
     Optional<HorarioUbicacion> findHorarioById(@Param("id") Long id);
+
+    @Query("SELECT u FROM Ubicacion u WHERE u.activa = true")
+    Page<Ubicacion> findAllActivas(Pageable pageable);
 }
