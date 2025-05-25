@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.request.actividad.HorarioUbicacionDto;
 import com.unicolombo.bienestar.dto.request.actividad.UbicacionDto;
 import com.unicolombo.bienestar.dto.request.estudiante.CambiarEstadoRequest;
+import com.unicolombo.bienestar.dto.response.PageResponse;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
@@ -11,6 +12,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,23 +51,9 @@ public class UbicacionController {
 
     @GetMapping
     @Operation(summary = "Listar ubicaciones activas")
-    public ResponseEntity<?> listarUbicaciones() {
-        try {
-            List<?> ubicaciones = ubicacionService.listarUbicacionesActivas();
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", ubicaciones);
-            response.put("status", "success");
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "status", "error",
-                    "message", "Error interno del servidor",
-                    "details", e.getMessage()
-            ));
-        }
+    public ResponseEntity<?> listarUbicaciones(@PageableDefault(size = 10) Pageable pageable) {
+        Page<Ubicacion> ubicaciones = ubicacionService.listarUbicacionesActivas(pageable);
+        return ResponseEntity.ok(new PageResponse<>(ubicaciones));
     }
 
     @Operation(summary = "Obtener horarios en uso de una ubicación")

@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.request.instructor.*;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadInstructorDto;
 import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
+import com.unicolombo.bienestar.dto.response.PageResponse;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.repositories.InstructorRepository;
 import com.unicolombo.bienestar.services.ActividadService;
@@ -130,16 +131,11 @@ public class InstructorController {
 
     @Operation(summary = "Obtener mis actividades")
     @GetMapping("/mis-actividades")
-    public ResponseEntity<?> getMisActividades(@AuthenticationPrincipal UserDetails userDetails) {
-        try {
-            Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
-            List<ActividadInstructorDto> actividades = instructorService.getActividadesAsignadasFormateadas(instructorId);
-            return ResponseEntity.ok()
-                    .body(ResponseWrapper.success(actividades, "Mis actividades obtenidas"));
-        } catch (BusinessException e) {
-            return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error(e.getMessage()));
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getMisActividades(@PageableDefault(size = 10) Pageable pageable, @AuthenticationPrincipal UserDetails userDetails) {
+        Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
+        Page<ActividadInstructorDto> actividades = instructorService.getActividadesAsignadas(instructorId,pageable);
+        return ResponseEntity.ok(new PageResponse<>(actividades));
     }
 
     @Operation(summary = "Obtener mi perfil")

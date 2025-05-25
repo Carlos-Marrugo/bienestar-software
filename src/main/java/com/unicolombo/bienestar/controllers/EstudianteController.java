@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.controllers;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadEstudianteDto;
 import com.unicolombo.bienestar.dto.request.estudiante.*;
+import com.unicolombo.bienestar.dto.response.PageResponse;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.EstadoEstudiante;
 import com.unicolombo.bienestar.models.Estudiante;
@@ -124,17 +125,8 @@ public class EstudianteController {
     public ResponseEntity<?> listarEstudiantes(
             Pageable pageable,
             @RequestParam(required = false) String filtro) {
-
         Page<Estudiante> estudiantes = estudianteService.listarEstudiantes(pageable, filtro);
-        return ResponseEntity.ok(Map.of(
-                "status", "success",
-                "data", estudiantes.getContent(),
-                "meta", Map.of(
-                        "total", estudiantes.getTotalElements(),
-                        "page", estudiantes.getNumber(),
-                        "size", estudiantes.getSize()
-                )
-        ));
+        return ResponseEntity.ok(new PageResponse<>(estudiantes));
     }
 
     @PatchMapping("/{id}/estado")
@@ -315,7 +307,7 @@ public class EstudianteController {
 
     @GetMapping("/mis-actividades")
     @PreAuthorize("hasRole('ESTUDIANTE')")
-    public ResponseEntity<Page<ActividadEstudianteDto>> obtenerActividadesInscritas(
+    public ResponseEntity<PageResponse<ActividadEstudianteDto>> obtenerActividadesInscritas(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal UserDetails userDetails
@@ -323,6 +315,6 @@ public class EstudianteController {
         Estudiante estudiante = estudianteService.obtenerEstudianteByUsuario(userDetails.getUsername());
         Pageable pageable = PageRequest.of(page, size);
         Page<ActividadEstudianteDto> actividades = actividadService.obtenerActividadesInscritasPorEstudiante(estudiante.getId(), pageable);
-        return ResponseEntity.ok(actividades);
+        return ResponseEntity.ok(new PageResponse<>(actividades));
     }
 }

@@ -1,5 +1,7 @@
 package com.unicolombo.bienestar.repositories;
 
+import com.unicolombo.bienestar.dto.request.actividad.ActividadInstructorDto;
+import com.unicolombo.bienestar.models.Actividad;
 import com.unicolombo.bienestar.models.Instructor;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,9 +24,6 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
 
     @Query("SELECT i FROM Instructor i JOIN FETCH i.usuario WHERE i.usuario.email = :email")
     Optional<Instructor> findByUsuarioEmail(@Param("email") String email);
-
-    @Query("SELECT i FROM Instructor i JOIN FETCH i.actividades WHERE i.id = :instructorId")
-    Optional<Instructor> findByIdWithActividades(@Param("instructorId") Long instructorId);
 
     @Query("SELECT i.id FROM Instructor i WHERE i.usuario.email = :email")
     Optional<Long> findIdByUsuarioEmail(@Param("email") String email);

@@ -1,6 +1,7 @@
 package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.request.inscripcion.InscripcionCreateDto;
+import com.unicolombo.bienestar.dto.response.PageResponse;
 import com.unicolombo.bienestar.dto.response.ResponseDto;
 import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
@@ -261,13 +262,13 @@ public class InscripcionController {
     }
 
     @GetMapping("/instructores/{id}/estudiantes")
-    public ResponseEntity<ResponseDto> getEstudiantesInscritos(
+    public ResponseEntity<?> getEstudiantesInscritos(
             @PathVariable("id") Long instructorId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
         Page<EstudianteInscritoDto> estudiantes = inscripcionService.getEstudiantesInscritosByInstructor(instructorId, pageable);
-        return ResponseEntity.ok(ResponseDto.success("Estudiantes recuperados exitosamente", estudiantes));
+        return ResponseEntity.ok(new PageResponse<>(estudiantes));
     }
 }

@@ -226,6 +226,9 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
             "ORDER BY a.fechaInicio ASC")
     Page<Actividad> findActividadesDisponibles(Pageable pageable);
 
+    @Query("SELECT a FROM Instructor i JOIN i.actividades a WHERE i.id = :instructorId")
+    Page<Actividad> findActividadesByInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
+
     Page<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha, Pageable pageable);
     List<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha);
 }

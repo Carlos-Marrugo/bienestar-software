@@ -102,17 +102,13 @@ public class InstructorService {
                 .orElseThrow(() -> new ResourceNoFoundException("Instructor no encontrado"));
     }
 
-    public List<Actividad> getActividadesAsignadasRaw(Long instructorId) {
-        Instructor instructor = instructorRepository.findByIdWithActividades(instructorId)
-                .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
-        return instructor.getActividades();
-    }
+    public Page<ActividadInstructorDto> getActividadesAsignadas(Long instructorId, Pageable pageable) {
+        if (!instructorRepository.existsById(instructorId)) {
+            throw new ResourceNoFoundException("Instructor no encontrado");
+        }
 
-    public List<ActividadInstructorDto> getActividadesAsignadasFormateadas(Long instructorId) {
-        List<Actividad> actividades = getActividadesAsignadasRaw(instructorId);
-        return actividades.stream()
-                .map(ActividadInstructorDto::new)
-                .collect(Collectors.toList());
+        Page<Actividad> actividades = actividadRepository.findActividadesByInstructorId(instructorId, pageable);
+        return actividades.map(ActividadInstructorDto::new);
     }
 
     public List<EstudianteDto> getEstudiantesInscritosEnActividad(Long instructorId, Long actividadId) {

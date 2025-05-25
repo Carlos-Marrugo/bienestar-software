@@ -10,6 +10,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -54,16 +56,20 @@ public class UbicacionService {
     }
 
     @Cacheable(value = "ubicacionesActivas")
-    public List<Ubicacion> listarUbicacionesActivas() {
-        List<Ubicacion> ubicaciones = ubicacionRepository.findAllActivas();
+    public Page<Ubicacion> listarUbicacionesActivas(Pageable pageable) {
+        Page<Ubicacion> ubicaciones = ubicacionRepository.findAllActivas(pageable);
+
         ubicaciones.forEach(u -> {
-            u.getHorarios().forEach(h -> {
-                h.setUbicacion(null);
-                h.setActividades(null);
-            });
+            if (u.getHorarios() != null) {
+                u.getHorarios().forEach(h -> {
+                    h.setUbicacion(null);
+                    h.setActividades(null);
+                });
+            }
         });
         return ubicaciones;
     }
+
 
     public boolean validarDisponibilidad(
             Long ubicacionId,
