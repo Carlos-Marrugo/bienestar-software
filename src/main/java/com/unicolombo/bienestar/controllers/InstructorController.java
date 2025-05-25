@@ -78,8 +78,12 @@ public class InstructorController {
     }
 
     @GetMapping("/instructores-activos")
-    public ResponseEntity<Page<InstructorListDto>> listarInstructores(@PageableDefault(size = 10) Pageable pageable) {
-        Page<InstructorListDto> resultado = instructorService.listarInstructoresActivos(pageable);
+    public ResponseEntity<Page<InstructorListDto>> listarInstructores(
+            @PageableDefault(size = 10)
+            @RequestParam(required = false) String search,
+            Pageable pageable
+    ) {
+        Page<InstructorListDto> resultado = instructorService.listarInstructoresActivos(pageable , search);
         return ResponseEntity.ok(resultado);
     }
 
@@ -132,9 +136,12 @@ public class InstructorController {
     @Operation(summary = "Obtener mis actividades")
     @GetMapping("/mis-actividades")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getMisActividades(@PageableDefault(size = 10) Pageable pageable, @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<?> getMisActividades(
+            @PageableDefault(size = 10) Pageable pageable,
+            @RequestParam(required = false) String search,
+            @AuthenticationPrincipal UserDetails userDetails) {
         Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
-        Page<ActividadInstructorDto> actividades = instructorService.getActividadesAsignadas(instructorId,pageable);
+        Page<ActividadInstructorDto> actividades = instructorService.getActividadesAsignadas(instructorId,pageable , search);
         return ResponseEntity.ok(new PageResponse<>(actividades));
     }
 
