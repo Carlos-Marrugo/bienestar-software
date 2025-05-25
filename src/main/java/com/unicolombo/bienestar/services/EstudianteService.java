@@ -2,6 +2,7 @@ package com.unicolombo.bienestar.services;
 
 import com.unicolombo.bienestar.dto.request.estudiante.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.exceptions.ResourceNoFoundException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
 import lombok.RequiredArgsConstructor;
@@ -220,8 +221,8 @@ public class EstudianteService {
     }
 
     public Estudiante obtenerEstudianteByUsuario(String email) {
-        Usuario usuario = usuarioRepo.findByEmail(email).orElseThrow(RuntimeException::new);
-        return estudianteRepo.findByUsuarioId(usuario.getId()).orElseThrow(RuntimeException::new);
+        Usuario usuario = usuarioRepo.findByEmail(email).orElseThrow(()-> new ResourceNoFoundException("Estudiante no encontrado"));
+        return estudianteRepo.findByUsuarioId(usuario.getId()).orElseThrow(()-> new ResourceNoFoundException("Estudiante no encontrado"));
     }
 
 }

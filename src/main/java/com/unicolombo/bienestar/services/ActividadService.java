@@ -4,8 +4,10 @@ package com.unicolombo.bienestar.services;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadCreateDto;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadEstudianteDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadInstructorDto;
 import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
+import com.unicolombo.bienestar.exceptions.ResourceNoFoundException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -328,6 +330,10 @@ public class ActividadService {
     }
 
     public Page<ActividadEstudianteDto> obtenerActividadesInscritasPorEstudiante(Long estudianteId, Pageable pageable) {
-        return inscripcionRepository.findActividadesByEstudianteId(estudianteId, pageable);
+        Page<Actividad> actividades = actividadRepository.findActividadesByEstudianteId(estudianteId, pageable);
+        if (actividades.isEmpty()) {
+            throw new ResourceNoFoundException("El estudiante no tiene actividades asignadas");
+        }
+        return actividades.map(ActividadEstudianteDto::new);
     }
 }

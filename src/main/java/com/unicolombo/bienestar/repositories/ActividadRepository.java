@@ -231,4 +231,7 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
 
     Page<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha, Pageable pageable);
     List<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha);
+
+    @Query("SELECT a FROM Inscripcion i JOIN i.actividad a WHERE i.estudiante.id = :estudianteId")
+    Page<Actividad> findActividadesByEstudianteId(@Param("estudianteId") Long estudianteId, Pageable pageable);
 }

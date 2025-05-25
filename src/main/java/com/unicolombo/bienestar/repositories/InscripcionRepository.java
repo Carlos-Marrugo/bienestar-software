@@ -101,23 +101,4 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
     Page<EstudianteInscritoDto> findEstudiantesInscritosByInstructorId(
             @Param("instructorId") Long instructorId,
             Pageable pageable);
-
-
-    @Query("""
-        SELECT new com.unicolombo.bienestar.dto.request.actividad.ActividadEstudianteDto(
-            a.id,
-            a.nombre,
-            a.fechaInicio,
-            a.fechaFin,
-            u.nombre
-        )
-        FROM Inscripcion i
-        JOIN i.actividad a
-        LEFT JOIN a.ubicacion u
-        WHERE i.estudiante.id = :estudianteId
-    """)
-    Page<ActividadEstudianteDto> findActividadesByEstudianteId(
-            @Param("estudianteId") Long estudianteId,
-            Pageable pageable
-    );
 }

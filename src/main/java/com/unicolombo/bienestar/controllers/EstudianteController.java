@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -308,12 +309,10 @@ public class EstudianteController {
     @GetMapping("/mis-actividades")
     @PreAuthorize("hasRole('ESTUDIANTE')")
     public ResponseEntity<PageResponse<ActividadEstudianteDto>> obtenerActividadesInscritas(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @PageableDefault(size = 10) Pageable pageable,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         Estudiante estudiante = estudianteService.obtenerEstudianteByUsuario(userDetails.getUsername());
-        Pageable pageable = PageRequest.of(page, size);
         Page<ActividadEstudianteDto> actividades = actividadService.obtenerActividadesInscritasPorEstudiante(estudiante.getId(), pageable);
         return ResponseEntity.ok(new PageResponse<>(actividades));
     }
