@@ -129,10 +129,11 @@ public class ActividadController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String filtro,
+            @RequestParam(required = false) String search,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            Page<Actividad> actividades = actividadService.listarActividadesAdmin(page, size, filtro);
+            Page<Actividad> actividades = actividadService.listarActividadesAdmin(page, size, filtro , search);
 
             return ResponseEntity.ok(Map.of(
                     "status", "success",
