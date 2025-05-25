@@ -52,8 +52,12 @@ public class ActividadService {
     @Autowired
     private InscripcionRepository inscripcionRepository;
 
-    public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro) {
+    public Page<Actividad> listarActividadesAdmin(int page, int size, String filtro, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").descending());
+
+        if (search != null && !search.isEmpty()) {
+            return actividadRepository.findByNombreContainingIgnoreCase(search, pageable);
+        }
 
         if (filtro != null && !filtro.isEmpty()) {
             return actividadRepository.findByNombreContainingIgnoreCase(filtro, pageable);
