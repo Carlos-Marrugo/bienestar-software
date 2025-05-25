@@ -323,20 +323,23 @@ public class ActividadService {
             String filtro,
             Pageable pageable) {
 
-        if (instructorId != null){
-            Actividad actividad = actividadRepository.findById(actividadId)
-                    .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+        Actividad actividad = actividadRepository.findById(actividadId)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
 
-            if (!actividad.getInstructor().getId().equals(instructorId)) {
-                throw new BusinessException("No tienes permisos para ver los estudiantes de esta actividad", HttpStatus.FORBIDDEN);
-            }
+        if (instructorId != null && !actividad.getInstructor().getId().equals(instructorId)) {
+            throw new BusinessException("No tienes permisos para ver los estudiantes de esta actividad", HttpStatus.FORBIDDEN);
         }
 
-        if (filtro != null && !filtro.trim().isEmpty()) {
+        String terminoBusqueda = (filtro != null && !filtro.trim().isEmpty())
+                ? "%" + filtro.trim().toLowerCase() + "%"
+                : null;
+
+        if (terminoBusqueda != null) {
             return inscripcionRepository.findEstudiantesInscritosByActividadIdWithFilter(
-                    actividadId, filtro.trim(), pageable);
+                    actividadId, terminoBusqueda, pageable);
         } else {
-            return inscripcionRepository.findEstudiantesInscritosByActividadId(actividadId, pageable);
+            return inscripcionRepository.findEstudiantesInscritosByActividadId(
+                    actividadId, pageable);
         }
     }
 

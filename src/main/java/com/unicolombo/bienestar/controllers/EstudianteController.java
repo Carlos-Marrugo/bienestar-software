@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -264,31 +266,31 @@ public class EstudianteController {
     public ResponseEntity<?> getEstudiantesInscritos(
             @PathVariable Long actividadId,
             @RequestParam(required = false) String filtro,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            int pageIndex = page - 1;
-            if (pageIndex < 0) pageIndex = 0;
+            // Validar página (no menor que 1)
+            int pageIndex = page < 1 ? 0 : page - 1;
 
             Long instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
             Page<EstudianteInscritoDto> estudiantes = actividadService.getEstudiantesInscritosEnActividad(
                     actividadId,
                     instructorId,
                     filtro,
-                    PageRequest.of(pageIndex, size));
+                    PageRequest.of(pageIndex, size, Sort.by("fechaInscripcion").descending()));
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", estudiantes.getContent());
-
-            Map<String, Object> pagination = new HashMap<>();
-            pagination.put("totalItems", estudiantes.getTotalElements());
-            pagination.put("currentPage", page);
-            pagination.put("totalPages", estudiantes.getTotalPages());
-
-            response.put("pagination", pagination);
+            // Construir respuesta estructurada
+            Map<String, Object> response = new LinkedHashMap<>();
             response.put("status", "success");
+            response.put("data", estudiantes.getContent());
+            response.put("pagination", Map.of(
+                    "currentPage", page,
+                    "pageSize", size,
+                    "totalItems", estudiantes.getTotalElements(),
+                    "totalPages", estudiantes.getTotalPages()
+            ));
 
             return ResponseEntity.ok(response);
 
@@ -302,7 +304,7 @@ public class EstudianteController {
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",
                     "message", "Error interno del servidor",
-                    "details", e.getMessage()
+                    "error", e.getMessage()
             ));
         }
     }
