@@ -13,6 +13,8 @@ import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.services.JwtService;
 import com.unicolombo.bienestar.utils.ResponseWrapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,13 +80,36 @@ public class InstructorController {
     }
 
     @GetMapping("/instructores-activos")
-    public ResponseEntity<Page<InstructorListDto>> listarInstructores(
-            @PageableDefault(size = 10)
-            @RequestParam(required = false) String search,
-            Pageable pageable
-    ) {
-        Page<InstructorListDto> resultado = instructorService.listarInstructoresActivos(pageable , search);
-        return ResponseEntity.ok(resultado);
+    @Operation(summary = "Listar instructores activos",
+            description = "Obtiene un listado paginado de instructores activos con opción de búsqueda")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<?> listarInstructores(
+            @PageableDefault(size = 10) Pageable pageable,
+            @RequestParam(required = false) String search) {
+
+        try {
+            Page<InstructorListDto> resultado = instructorService.listarInstructoresActivos(pageable, search);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("data", resultado.getContent());
+            response.put("pagination", Map.of(
+                    "currentPage", resultado.getNumber(),
+                    "totalItems", resultado.getTotalElements(),
+                    "totalPages", resultado.getTotalPages()
+            ));
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "Error al listar instructores: " + e.getMessage()
+            ));
+        }
     }
 
     @GetMapping("/{id}")
