@@ -78,9 +78,9 @@ public class InstructorController {
     }
 
     @GetMapping("/instructores-activos")
-    public ResponseEntity<Page<InstructorListDto>> listarInstructores(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<?> listarInstructores(@PageableDefault(size = 10) Pageable pageable) {
         Page<InstructorListDto> resultado = instructorService.listarInstructoresActivos(pageable);
-        return ResponseEntity.ok(resultado);
+        return ResponseEntity.ok(new PageResponse<>(resultado));
     }
 
     @GetMapping("/{id}")
