@@ -234,20 +234,12 @@ public class InstructorController {
     public ResponseEntity<?> getEstudiantesInscritos(
             @PathVariable Long actividadId,
             @RequestParam(required = false) String filtro,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @PageableDefault(size = 10)  Pageable pageable,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        try {
-            int pageIndex = page - 1;
-            if (pageIndex < 0) pageIndex = 0;
-
             Long instructorId = null;
-            log.info("Authorities: {}", userDetails.getAuthorities());
             String authority = userDetails.getAuthorities().toString();
-            log.info("Authorities s: {}", authority);
             if (authority.equals("[ROLE_INSTRUCTOR]")) {
-                log.info("En el if");
                 instructorId = instructorService.getInstructorIdByEmail(userDetails.getUsername());
             }
 
@@ -255,34 +247,8 @@ public class InstructorController {
                     actividadId,
                     instructorId,
                     filtro,
-                    PageRequest.of(pageIndex, size, Sort.by("fechaInscripcion").descending())
+                    pageable
             );
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", resultado.getContent());
-
-            Map<String, Object> pagination = new HashMap<>();
-            pagination.put("totalItems", resultado.getTotalElements());
-            pagination.put("currentPage", page);
-            pagination.put("totalPages", resultado.getTotalPages());
-
-            response.put("pagination", pagination);
-            response.put("status", "success");
-
-            return ResponseEntity.ok(response);
-
-        } catch (BusinessException e) {
-            return ResponseEntity.status(e.getStatus()).body(Map.of(
-                    "status", "error",
-                    "message", e.getMessage(),
-                    "timestamp", LocalDateTime.now()
-            ));
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                    "status", "error",
-                    "message", "Error interno del servidor: " + ex.getMessage(),
-                    "timestamp", LocalDateTime.now()
-            ));
-        }
+            return ResponseEntity.ok(new PageResponse<>(resultado));
     }
 }
