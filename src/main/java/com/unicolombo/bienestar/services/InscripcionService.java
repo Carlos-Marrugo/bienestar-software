@@ -178,14 +178,14 @@ public class InscripcionService {
         return inscripcionRepository.countByActividadId(actividadId);
     }
 
-    @Cacheable(value = "listaInscripcionesActividad", key = "#actividadId")
-    public List<Inscripcion> obtenerInscripcionesPorActividad(Long actividadId) {
+    @Cacheable(value = "listaInscripcionesActividad", key = "{#actividadId, #pageable.pageNumber, #pageable.pageSize}")
+    public Page<Inscripcion> obtenerInscripcionesPorActividad(Long actividadId, Pageable pageable) {
         if(!actividadRepository.existsById(actividadId)) {
             log.error("Actividad con ID {} no encontrada al obtener inscripciones", actividadId);
             throw new BusinessException("Actividad no encontrada con ID: " + actividadId);
         }
         log.info("Buscando inscripciones para la actividad con ID: {}", actividadId);
-        return inscripcionRepository.findAllByActividadIdWithEstudiante(actividadId);
+        return inscripcionRepository.findAllByActividadIdWithEstudiante(actividadId, pageable);
     }
 
     @Cacheable(value = "inscripciones", key = "{#page, #size}")

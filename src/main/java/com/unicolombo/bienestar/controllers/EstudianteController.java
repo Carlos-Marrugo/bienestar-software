@@ -225,6 +225,7 @@ public class EstudianteController {
     @PreAuthorize("hasRole('ESTUDIANTE')")
     public ResponseEntity<?> listarActividadesDisponibles(
             @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "10") int size) {
 
         try {
@@ -232,7 +233,7 @@ public class EstudianteController {
             if (pageIndex < 0) pageIndex = 0;
 
             Page<ActividadDisponibleSimpleDto> actividades =
-                    actividadService.listarActividadesDisponiblesSimples(pageIndex, size);
+                    actividadService.buscarActividadesDisponiblesSimples(pageIndex, size , search);
 
             Map<String, Object> response = new HashMap<>();
             response.put("data", actividades.getContent());
@@ -308,12 +309,24 @@ public class EstudianteController {
 
     @GetMapping("/mis-actividades")
     @PreAuthorize("hasRole('ESTUDIANTE')")
+    @Operation(summary = "Obtener actividades inscritas por estudiante",
+            description = "Lista paginada de actividades en las que el estudiante está inscrito, con opción de búsqueda")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+            @ApiResponse(responseCode = "404", description = "Estudiante no encontrado o sin actividades"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     public ResponseEntity<PageResponse<ActividadEstudianteDto>> obtenerActividadesInscritas(
             @PageableDefault(size = 10) Pageable pageable,
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
+            @RequestParam(required = false) String search,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
         Estudiante estudiante = estudianteService.obtenerEstudianteByUsuario(userDetails.getUsername());
-        Page<ActividadEstudianteDto> actividades = actividadService.obtenerActividadesInscritasPorEstudiante(estudiante.getId(), pageable);
+        Page<ActividadEstudianteDto> actividades = actividadService.obtenerActividadesInscritasPorEstudiante(
+                estudiante.getId(),
+                search,
+                pageable);
+
         return ResponseEntity.ok(new PageResponse<>(actividades));
     }
 }

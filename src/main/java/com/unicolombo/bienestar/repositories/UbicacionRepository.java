@@ -20,6 +20,11 @@ public interface UbicacionRepository extends JpaRepository<Ubicacion, Long> {
     @Query("SELECT u FROM Ubicacion u WHERE u.activa = true")
     Page<Ubicacion> findAllActivas(Pageable pageable);
 
+    @Query("SELECT u FROM Ubicacion u WHERE u.activa = true AND LOWER(u.nombre) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<Ubicacion> findByActivaTrueAndNombreContainingIgnoreCase(
+            @Param("search") String search,
+            Pageable pageable);
+
     @Query("SELECT u FROM Ubicacion u WHERE u.id = :id AND u.activa = true")
     Optional<Ubicacion> findByIdAndActivaTrue(@Param("id") Long id);
 

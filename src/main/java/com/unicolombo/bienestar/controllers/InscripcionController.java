@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -124,18 +125,20 @@ public class InscripcionController {
         }
     }
 
-    @Operation(summary = "Listar estudiantes inscritos en una actividad",
-            description = "Permite a un instructor o admin ver los estudiantes inscritos en una actividad")
+    @GetMapping("/instructores/actividades/{actividadId}/estudiantes")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
+    @Operation(summary = "Listar estudiantes inscritos en actividad",
+            description = "Obtiene un listado paginado de estudiantes inscritos en una actividad específica")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Listado exitoso"),
             @ApiResponse(responseCode = "403", description = "No autorizado"),
-            @ApiResponse(responseCode = "404", description = "Actividad no encontrada")
+            @ApiResponse(responseCode = "404", description = "Actividad no encontrada"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-
-    @GetMapping("/instructores/actividades/{actividadId}/estudiantes")
-    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<?> listarEstudiantesInscritos(
             @PathVariable Long actividadId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
@@ -154,10 +157,10 @@ public class InscripcionController {
                 }
             }
 
-            List<Inscripcion> inscripciones = inscripcionService.obtenerInscripcionesPorActividad(actividadId);
-            log.info("Encontradas {} inscripciones para la actividad {}", inscripciones.size(), actividadId);
+            Pageable pageable = PageRequest.of(page, size, Sort.by("estudiante.codigoEstudiantil").ascending());
+            Page<Inscripcion> inscripcionesPage = inscripcionService.obtenerInscripcionesPorActividad(actividadId, pageable);
 
-            List<Map<String, Object>> estudiantes = inscripciones.stream()
+            List<Map<String, Object>> estudiantes = inscripcionesPage.getContent().stream()
                     .map(inscripcion -> {
                         Estudiante estudiante = inscripcion.getEstudiante();
                         Map<String, Object> estudianteData = new HashMap<>();
@@ -187,14 +190,14 @@ public class InscripcionController {
                     })
                     .collect(Collectors.toList());
 
-            return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "data", estudiantes,
-                    "meta", Map.of(
-                            "actividadId", actividadId,
-                            "total", estudiantes.size()
-                    )
-            ));
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("data", estudiantes);
+            response.put("pagination", new PageResponse<>(inscripcionesPage));
+            response.put("meta", Map.of("actividadId", actividadId));
+
+            return ResponseEntity.ok(response);
+
         } catch (BusinessException e) {
             log.error("Error de negocio al listar estudiantes: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(

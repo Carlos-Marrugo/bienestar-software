@@ -232,6 +232,28 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
     Page<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha, Pageable pageable);
     List<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(LocalDate fecha);
 
+    @Query("SELECT a FROM Actividad a WHERE a.fechaFin >= :fecha AND a.ubicacion IS NOT NULL " +
+            "AND LOWER(a.nombre) LIKE LOWER(concat('%', :search,'%'))")
+    Page<Actividad> findByFechaFinGreaterThanEqualAndUbicacionIsNotNullAndNombreContainingIgnoreCase(
+            @Param("fecha") LocalDate fecha,
+            @Param("search") String search,
+            Pageable pageable);
+
     @Query("SELECT a FROM Inscripcion i JOIN i.actividad a WHERE i.estudiante.id = :estudianteId")
     Page<Actividad> findActividadesByEstudianteId(@Param("estudianteId") Long estudianteId, Pageable pageable);
+
+    @Query("SELECT a FROM Inscripcion i JOIN i.actividad a " +
+            "WHERE i.estudiante.id = :estudianteId " +
+            "AND (LOWER(a.nombre) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "OR CAST(a.id AS string) LIKE CONCAT('%', :search, '%'))")
+    Page<Actividad> findActividadesByEstudianteIdAndSearch(
+            @Param("estudianteId") Long estudianteId,
+            @Param("search") String search,
+            Pageable pageable);
+
+    @Query("SELECT a FROM Actividad a WHERE a.instructor.id = :instructorId AND LOWER(a.nombre) LIKE LOWER(concat('%', :search,'%'))")
+    Page<Actividad> findByInstructorIdAndNombreContainingIgnoreCase(
+            @Param("instructorId") Long instructorId,
+            @Param("search") String search,
+            Pageable pageable);
 }

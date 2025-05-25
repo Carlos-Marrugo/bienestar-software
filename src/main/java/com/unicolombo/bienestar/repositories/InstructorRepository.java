@@ -19,6 +19,13 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
     @Query("SELECT i FROM Instructor i WHERE i.usuario.activo = true")
     Page<Instructor> findAllActive(Pageable pageable);
 
+    @Query("SELECT i FROM Instructor i WHERE i.usuario.activo = true " +
+            "AND (LOWER(i.usuario.nombre) LIKE LOWER(concat('%', :search,'%')) " +
+            "OR LOWER(i.usuario.apellido) LIKE LOWER(concat('%', :search,'%')))")
+    Page<Instructor> findByUsuarioActivoAndNombreOrApellidoContainingIgnoreCase(
+            @Param("search") String search,
+            Pageable pageable);
+
     @Query("SELECT i FROM Instructor i JOIN FETCH i.usuario u WHERE i.id = :id AND u.activo = true")
     Optional<Instructor> findActiveById(@Param("id") Long id);
 
@@ -27,4 +34,6 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
 
     @Query("SELECT i.id FROM Instructor i WHERE i.usuario.email = :email")
     Optional<Long> findIdByUsuarioEmail(@Param("email") String email);
+
+
 }

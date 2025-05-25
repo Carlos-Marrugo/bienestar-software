@@ -88,11 +88,19 @@ public class InstructorService {
         usuarioRepository.save(instructor.getUsuario());
     }
 
-    public Page<InstructorListDto> listarInstructoresActivos(Pageable pageable) {
-        Page<Instructor> page = instructorRepository.findAllActive(pageable);
-        if (page.isEmpty()) {
-            throw new ResourceNoFoundException("No hay instructores activos");
+    public Page<InstructorListDto> listarInstructoresActivos(Pageable pageable, String search) {
+        Page<Instructor> page;
+
+        if (search != null && !search.isEmpty()) {
+            page = instructorRepository.findByUsuarioActivoAndNombreOrApellidoContainingIgnoreCase(search, pageable);
+        } else {
+            page = instructorRepository.findAllActive(pageable);
         }
+
+        if (page.isEmpty()) {
+            throw new BusinessException("No hay instructores activos");
+        }
+
         return page.map(InstructorListDto::new);
     }
 
@@ -102,12 +110,18 @@ public class InstructorService {
                 .orElseThrow(() -> new ResourceNoFoundException("Instructor no encontrado"));
     }
 
-    public Page<ActividadInstructorDto> getActividadesAsignadas(Long instructorId, Pageable pageable) {
+    public Page<ActividadInstructorDto> getActividadesAsignadas(Long instructorId, Pageable pageable, String search) {
         if (!instructorRepository.existsById(instructorId)) {
-            throw new ResourceNoFoundException("Instructor no encontrado");
+            throw new BusinessException("Instructor no encontrado");
         }
 
-        Page<Actividad> actividades = actividadRepository.findActividadesByInstructorId(instructorId, pageable);
+        Page<Actividad> actividades;
+        if (search != null && !search.isEmpty()) {
+            actividades = actividadRepository.findByInstructorIdAndNombreContainingIgnoreCase(instructorId, search, pageable);
+        } else {
+            actividades = actividadRepository.findActividadesByInstructorId(instructorId, pageable);
+        }
+
         return actividades.map(ActividadInstructorDto::new);
     }
 

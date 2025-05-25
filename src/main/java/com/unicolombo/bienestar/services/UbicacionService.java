@@ -55,9 +55,15 @@ public class UbicacionService {
         return ubicacionRepository.save(ubicacion);
     }
 
-    @Cacheable(value = "ubicacionesActivas")
-    public Page<Ubicacion> listarUbicacionesActivas(Pageable pageable) {
-        Page<Ubicacion> ubicaciones = ubicacionRepository.findAllActivas(pageable);
+    @Cacheable(value = "ubicacionesActivas", key = "{#pageable.pageNumber, #pageable.pageSize, #search}")
+    public Page<Ubicacion> listarUbicacionesActivas(Pageable pageable, String search) {
+        Page<Ubicacion> ubicaciones;
+
+        if (search != null && !search.trim().isEmpty()) {
+            ubicaciones = ubicacionRepository.findByActivaTrueAndNombreContainingIgnoreCase(search.trim(), pageable);
+        } else {
+            ubicaciones = ubicacionRepository.findAllActivas(pageable);
+        }
 
         ubicaciones.forEach(u -> {
             if (u.getHorarios() != null) {
@@ -67,6 +73,7 @@ public class UbicacionService {
                 });
             }
         });
+
         return ubicaciones;
     }
 

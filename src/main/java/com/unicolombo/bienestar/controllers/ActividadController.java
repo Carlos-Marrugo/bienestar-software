@@ -379,6 +379,7 @@ public class ActividadController {
     public ResponseEntity<?> listarActividadesDisponiblesSimplificado(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String orderBy,
             @RequestParam(required = false, defaultValue = "ASC") String direction) {
 

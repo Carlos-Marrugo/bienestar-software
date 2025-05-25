@@ -295,13 +295,20 @@ public class ActividadService {
         });
     }
 
-    @Cacheable(value = "actividadesDisponiblesSimples", key = "{#page, #size}")
-    public Page<ActividadDisponibleSimpleDto> listarActividadesDisponiblesSimples(int page, int size) {
+    @Cacheable(value = "actividadesDisponiblesSimplesSearch", key = "{#page, #size, #search}")
+    public Page<ActividadDisponibleSimpleDto> buscarActividadesDisponiblesSimples(int page, int size, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaInicio").ascending());
 
         LocalDate hoy = LocalDate.now();
-        Page<Actividad> actividadesPage = actividadRepository
-                .findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);
+        Page<Actividad> actividadesPage;
+
+        if (search != null && !search.isEmpty()) {
+            actividadesPage = actividadRepository
+                    .findByFechaFinGreaterThanEqualAndUbicacionIsNotNullAndNombreContainingIgnoreCase(hoy, search, pageable);
+        } else {
+            actividadesPage = actividadRepository
+                    .findByFechaFinGreaterThanEqualAndUbicacionIsNotNull(hoy, pageable);
+        }
 
         return actividadesPage.map(actividad -> {
             int inscritos = inscripcionRepository.countByActividadId(actividad.getId());
@@ -333,11 +340,30 @@ public class ActividadService {
         }
     }
 
-    public Page<ActividadEstudianteDto> obtenerActividadesInscritasPorEstudiante(Long estudianteId, Pageable pageable) {
-        Page<Actividad> actividades = actividadRepository.findActividadesByEstudianteId(estudianteId, pageable);
-        if (actividades.isEmpty()) {
-            throw new ResourceNoFoundException("El estudiante no tiene actividades asignadas");
+    @Cacheable(value = "actividadesInscritas", key = "{#estudianteId, #pageable.pageNumber, #pageable.pageSize, #search}")
+    public Page<ActividadEstudianteDto> obtenerActividadesInscritasPorEstudiante(
+            Long estudianteId,
+            String search,
+            Pageable pageable) {
+
+        Page<Actividad> actividades;
+
+        if (search != null && !search.trim().isEmpty()) {
+            actividades = actividadRepository.findActividadesByEstudianteIdAndSearch(
+                    estudianteId,
+                    search.trim().toLowerCase(),
+                    pageable);
+        } else {
+            actividades = actividadRepository.findActividadesByEstudianteId(estudianteId, pageable);
         }
-        return actividades.map(ActividadEstudianteDto::new);
+
+        if (actividades.isEmpty()) {
+            throw new BusinessException("No se encontraron actividades para este estudiante");
+        }
+
+        return actividades.map(actividad -> {
+            ActividadEstudianteDto dto = new ActividadEstudianteDto(actividad);
+            return dto;
+        });
     }
 }

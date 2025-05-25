@@ -9,6 +9,8 @@ import com.unicolombo.bienestar.models.HorarioUbicacion;
 import com.unicolombo.bienestar.models.Ubicacion;
 import com.unicolombo.bienestar.services.UbicacionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,9 +52,17 @@ public class UbicacionController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar ubicaciones activas")
-    public ResponseEntity<?> listarUbicaciones(@PageableDefault(size = 10) Pageable pageable) {
-        Page<Ubicacion> ubicaciones = ubicacionService.listarUbicacionesActivas(pageable);
+    @Operation(summary = "Listar ubicaciones activas",
+            description = "Obtiene un listado paginado de ubicaciones activas con opción de búsqueda por nombre")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado exitoso"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<?> listarUbicaciones(
+            @PageableDefault(size = 10) Pageable pageable,
+            @RequestParam(required = false) String search) {
+
+        Page<Ubicacion> ubicaciones = ubicacionService.listarUbicacionesActivas(pageable, search);
         return ResponseEntity.ok(new PageResponse<>(ubicaciones));
     }
 
