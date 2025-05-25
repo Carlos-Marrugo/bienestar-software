@@ -11,6 +11,7 @@ public class InstructorDetailDto {
     private String email;
     private String especialidad;
     private LocalDate fechaContratacion;
+    private String fotoPerfil;
 
     public InstructorDetailDto(Instructor instructor) {
         this.id = instructor.getId();
@@ -19,6 +20,7 @@ public class InstructorDetailDto {
         this.email = instructor.getUsuario().getEmail();
         this.especialidad = instructor.getEspecialidad();
         this.fechaContratacion = instructor.getFechaContratacion();
+        this.fotoPerfil = instructor.getFotoPerfil();
     }
 
     public Long getId() {
@@ -67,5 +69,13 @@ public class InstructorDetailDto {
 
     public void setFechaContratacion(LocalDate fechaContratacion) {
         this.fechaContratacion = fechaContratacion;
+    }
+
+    public String getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public void setFotoPerfil(String fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
     }
 }

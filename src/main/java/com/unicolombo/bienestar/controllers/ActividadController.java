@@ -419,19 +419,19 @@ public class ActividadController {
     }
 
 
-private Map<String, Object> mapearActividadSimple(ActividadDisponibleSimpleDto dto) {
-    Map<String, Object> actividadSimple = new LinkedHashMap<>();
-    actividadSimple.put("id", dto.getId());
-    actividadSimple.put("nombre", dto.getNombre());
-    actividadSimple.put("ubicacion", dto.getUbicacion());
-    actividadSimple.put("fechaInicio", dto.getFechaInicio());
-    actividadSimple.put("fechaFin", dto.getFechaFin());
-    actividadSimple.put("maxEstudiantes", dto.getMaxEstudiantes());
-    actividadSimple.put("inscripcionesActuales", dto.getInscripcionesActuales());
-    actividadSimple.put("cuposDisponibles", dto.getCuposDisponibles());
-    actividadSimple.put("instructor", dto.getInstructor());
+    private Map<String, Object> mapearActividadSimple(ActividadDisponibleSimpleDto dto) {
+        Map<String, Object> actividadSimple = new LinkedHashMap<>();
+        actividadSimple.put("id", dto.getId());
+        actividadSimple.put("nombre", dto.getNombre());
+        actividadSimple.put("ubicacion", dto.getUbicacion());
+        actividadSimple.put("fechaInicio", dto.getFechaInicio());
+        actividadSimple.put("fechaFin", dto.getFechaFin());
+        actividadSimple.put("maxEstudiantes", dto.getMaxEstudiantes());
+        actividadSimple.put("inscripcionesActuales", dto.getInscripcionesActuales());
+        actividadSimple.put("cuposDisponibles", dto.getCuposDisponibles());
+        actividadSimple.put("instructor", dto.getInstructor());
 
-    return actividadSimple;
-}
+        return actividadSimple;
+    }
 
-}
+    }

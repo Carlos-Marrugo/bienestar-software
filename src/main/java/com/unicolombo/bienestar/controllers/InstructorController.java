@@ -1,12 +1,8 @@
 package com.unicolombo.bienestar.controllers;
 
-import com.unicolombo.bienestar.dto.request.instructor.RegistroInstructorDto;
+import com.unicolombo.bienestar.dto.request.instructor.*;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadInstructorDto;
 import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
-import com.unicolombo.bienestar.dto.request.instructor.InstructorAdminUpdateDto;
-import com.unicolombo.bienestar.dto.request.instructor.InstructorListDto;
-import com.unicolombo.bienestar.dto.request.instructor.InstructorPerfilDto;
-import com.unicolombo.bienestar.dto.request.instructor.InstructorSelfUpdateDto;
 import com.unicolombo.bienestar.models.Instructor;
 import com.unicolombo.bienestar.repositories.InstructorRepository;
 import com.unicolombo.bienestar.services.ActividadService;
@@ -21,7 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -79,34 +77,16 @@ public class InstructorController {
     }
 
     @GetMapping("/instructores-activos")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> listarInstructores() {
-        try {
-            List<InstructorListDto> instructores = instructorService.listarInstructoresActivos();
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", instructores);
-            response.put("status", "success");
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "status", "error",
-                    "message", "Error interno del servidor",
-                    "details", e.getMessage()
-            ));
-        }
+    public ResponseEntity<Page<InstructorListDto>> listarInstructores(@PageableDefault(size = 10) Pageable pageable) {
+        Page<InstructorListDto> resultado = instructorService.listarInstructoresActivos(pageable);
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> obtenerInstructor(@PathVariable Long id) {
-        return instructorService.obtenerInstructorDetalle(id)
-                .map(instructor -> ResponseEntity.ok()
-                        .body(ResponseWrapper.success(instructor, "Instructor encontrado")))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ResponseWrapper.error("Instructor no encontrado")));
+        InstructorDetailDto instructor =  instructorService.obtenerInstructorDetalle(id);
+        return ResponseEntity.ok(instructor);
     }
 
     @PutMapping("/{id}")
@@ -134,29 +114,17 @@ public class InstructorController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> desactivarInstructor(@PathVariable Long id) {
-        try {
-            instructorService.desactivarInstructor(id);
-            return ResponseEntity.ok()
-                    .body(ResponseWrapper.success(null, "Instructor desactivado exitosamente"));
-        } catch (BusinessException e) {
-            return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error(e.getMessage()));
-        }
+        instructorService.desactivarInstructor(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Instructor desactivado correctamente"));
     }
-
 
     @Operation(summary = "Obtener perfil del instructor")
     @GetMapping("/perfil/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> obtenerPerfilInstructor(@PathVariable Long id) {
-        try {
             InstructorPerfilDto perfil = instructorService.obtenerPerfilInstructor(id);
             return ResponseEntity.ok()
                     .body(ResponseWrapper.success(perfil, "Perfil del instructor obtenido"));
-        } catch (BusinessException e) {
-            return ResponseEntity.badRequest()
-                    .body(ResponseWrapper.error(e.getMessage()));
-        }
     }
 
 

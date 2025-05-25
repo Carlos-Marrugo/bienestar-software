@@ -4,11 +4,13 @@ import com.unicolombo.bienestar.dto.request.instructor.RegistroInstructorDto;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadInstructorDto;
 import com.unicolombo.bienestar.dto.request.estudiante.EstudianteDto;
 import com.unicolombo.bienestar.dto.request.instructor.*;
+import com.unicolombo.bienestar.exceptions.ResourceNoFoundException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.*;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -76,7 +78,7 @@ public class InstructorService {
 
     public void desactivarInstructor(Long id) {
         Instructor instructor = instructorRepository.findActiveById(id)
-                .orElseThrow(() -> new BusinessException("Instructor no encontrado o ya inactivo"));
+                .orElseThrow(() -> new ResourceNoFoundException("Instructor no encontrado o ya inactivo"));
 
         if (!instructor.getActividades().isEmpty()) {
             throw new BusinessException("No se puede desactivar un instructor con actividades asignadas");
@@ -86,17 +88,19 @@ public class InstructorService {
         usuarioRepository.save(instructor.getUsuario());
     }
 
-    public List<InstructorListDto> listarInstructoresActivos() {
-        return instructorRepository.findAllActive().stream()
-                .map(InstructorListDto::new)
-                .collect(Collectors.toList());
+    public Page<InstructorListDto> listarInstructoresActivos(Pageable pageable) {
+        Page<Instructor> page = instructorRepository.findAllActive(pageable);
+        if (page.isEmpty()) {
+            throw new ResourceNoFoundException("No hay instructores activos");
+        }
+        return page.map(InstructorListDto::new);
     }
 
-    public Optional<InstructorDetailDto> obtenerInstructorDetalle(Long id) {
+    public InstructorDetailDto obtenerInstructorDetalle(Long id) {
         return instructorRepository.findActiveById(id)
-                .map(InstructorDetailDto::new);
+                .map(InstructorDetailDto::new)
+                .orElseThrow(() -> new ResourceNoFoundException("Instructor no encontrado"));
     }
-
 
     public List<Actividad> getActividadesAsignadasRaw(Long instructorId) {
         Instructor instructor = instructorRepository.findByIdWithActividades(instructorId)
@@ -133,33 +137,12 @@ public class InstructorService {
 
     public Long getInstructorIdByEmail(String email) throws BusinessException {
         return instructorRepository.findIdByUsuarioEmail(email)
-                .orElseThrow(() -> new BusinessException("No se encontró un instructor con ese email"));
+                .orElseThrow(() -> new ResourceNoFoundException("No se encontró un instructor con ese email"));
     }
 
     public InstructorPerfilDto obtenerPerfilInstructor(Long id) {
-        Instructor instructor = instructorRepository.findActiveById(id)
-                .orElseThrow(() -> new BusinessException("Instructor no encontrado o inactivo"));
-
-        return mapToPerfilDto(instructor);
-    }
-
-    private InstructorPerfilDto mapToPerfilDto(Instructor instructor) {
-        InstructorPerfilDto dto = new InstructorPerfilDto();
-        dto.setId(instructor.getId());
-        dto.setNombre(instructor.getUsuario().getNombre());
-        dto.setApellido(instructor.getUsuario().getApellido());
-        dto.setEmail(instructor.getUsuario().getEmail());
-        dto.setEspecialidad(instructor.getEspecialidad());
-        dto.setFechaContratacion(instructor.getFechaContratacion().toString());
-
-        return dto;
-    }
-
-    public InstructorPerfilDto obtenerPerfilPorEmail(String email) {
-        Instructor instructor = instructorRepository.findByUsuarioEmail(email)
-                .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
-
-        return mapToPerfilDto(instructor);
+        return instructorRepository.findActiveById(id).map(InstructorPerfilDto::new)
+                .orElseThrow(() -> new ResourceNoFoundException("Instructor no encontrado o inactivo"));
     }
 
     public Instructor actualizarInstructorAdmin(Long id, InstructorAdminUpdateDto dto) {

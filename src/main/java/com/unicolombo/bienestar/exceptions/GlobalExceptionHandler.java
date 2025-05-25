@@ -55,8 +55,7 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 null
         );
-
-        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        return new ResponseEntity<>(response, ex.getStatus());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
