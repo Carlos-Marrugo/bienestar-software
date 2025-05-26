@@ -7,6 +7,7 @@ import lombok.Data;
 public class RegistroInstructorDto {
     @NotBlank(message = "Email es obligatorio")
     @Email(message = "Formato de email inválido")
+    @NotBlank @Email(regexp = ".+@unicolombo\\.edu\\.co$")
     private String email;
 
     @NotBlank(message = "Contraseña es obligatoria")
