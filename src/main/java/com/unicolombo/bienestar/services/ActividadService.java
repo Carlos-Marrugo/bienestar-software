@@ -57,11 +57,9 @@ public class ActividadService {
         if (search != null && !search.isEmpty()) {
             return actividadRepository.findByNombreContainingIgnoreCase(search, pageable);
         }
-
         if (filtro != null && !filtro.isEmpty()) {
             return actividadRepository.findByNombreContainingIgnoreCase(filtro, pageable);
         }
-
         return actividadRepository.findAll(pageable);
     }
 

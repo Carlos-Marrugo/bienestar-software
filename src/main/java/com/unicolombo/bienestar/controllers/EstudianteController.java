@@ -127,8 +127,8 @@ public class EstudianteController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> listarEstudiantes(
             Pageable pageable,
-            @RequestParam(required = false) String filtro) {
-        Page<Estudiante> estudiantes = estudianteService.listarEstudiantes(pageable, filtro);
+            @RequestParam(required = false) String search) {
+        Page<Estudiante> estudiantes = estudianteService.listarEstudiantes(pageable, search);
         return ResponseEntity.ok(new PageResponse<>(estudiantes));
     }
 

@@ -23,7 +23,7 @@ public class ActividadUpdateDto {
 
     private LocalDate fechaFin;
 
-    @NotNull(message = "La hora de inicio es obligatoria")
+    //@NotNull(message = "La hora de inicio es obligatoria")
     private LocalTime horaInicio;
 
     private LocalTime horaFin;
