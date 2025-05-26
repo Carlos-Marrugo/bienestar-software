@@ -48,7 +48,7 @@ public class EstudianteService {
 
         Usuario usuario = new Usuario();
         usuario.setEmail(dto.getEmail());
-        usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+        usuario.setPassword(passwordEncoder.encode(dto.getCodigoEstudiantil()));
         usuario.setNombre(dto.getNombre());
         usuario.setApellido(dto.getApellido());
         usuario.setRol(Role.ESTUDIANTE);
