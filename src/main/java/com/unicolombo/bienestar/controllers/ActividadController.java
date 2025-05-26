@@ -3,6 +3,7 @@ package com.unicolombo.bienestar.controllers;
 
 import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
 import com.unicolombo.bienestar.dto.request.actividad.ActividadCreateDto;
+import com.unicolombo.bienestar.dto.request.actividad.ActividadUpdateDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.models.*;
 import com.unicolombo.bienestar.repositories.ActividadRepository;
@@ -319,7 +320,6 @@ public class ActividadController {
                     .collect(Collectors.toList());
             dto.put("horarios", horariosList);
         }
-
         return dto;
     }
 
@@ -327,7 +327,7 @@ public class ActividadController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> editarActividad(
             @PathVariable Long id,
-            @Valid @RequestBody ActividadCreateDto dto,
+            @Valid @RequestBody ActividadUpdateDto dto,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {

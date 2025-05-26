@@ -2,19 +2,21 @@ package com.unicolombo.bienestar.dto.request.actividad;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Data
 public class ActividadUpdateDto {
     @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
 
-    @NotBlank(message = "Ubicacion es obligatoria")
-    private String ubicacion;
+    @NotNull(message = "Ubicacion es obligatoria")
+    private Long ubicacion;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
     private LocalDate fechaInicio;
@@ -32,4 +34,6 @@ public class ActividadUpdateDto {
 
     @NotNull(message = "El ID del instructor es obligatorio")
     private Long instructorId;
+
+    private List<ActividadCreateDto.HorarioActividadDto> horarios;
 }

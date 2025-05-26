@@ -1,10 +1,7 @@
 package com.unicolombo.bienestar.services;
 
 
-import com.unicolombo.bienestar.dto.request.actividad.ActividadDisponibleSimpleDto;
-import com.unicolombo.bienestar.dto.request.actividad.ActividadCreateDto;
-import com.unicolombo.bienestar.dto.request.actividad.ActividadEstudianteDto;
-import com.unicolombo.bienestar.dto.request.actividad.ActividadInstructorDto;
+import com.unicolombo.bienestar.dto.request.actividad.*;
 import com.unicolombo.bienestar.dto.request.estudiante.EstudianteInscritoDto;
 import com.unicolombo.bienestar.exceptions.BusinessException;
 import com.unicolombo.bienestar.exceptions.ResourceNoFoundException;
@@ -25,7 +22,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -192,12 +191,9 @@ public class ActividadService {
     }
 
     @Transactional
-    public Actividad editarActividad(Long id, ActividadCreateDto dto, String emailUsuario) {
+    /*public Actividad editarActividad(Long id, ActividadUpdateDto dto, String emailUsuario) {
         Actividad actividad = actividadRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
-        if (!actividad.getHorarioUbicacion().getId().equals(dto.getHorarios().get(0).getHorarioUbicacionId())) {
-            throw new BusinessException("No se puede cambiar el horario de una actividad existente");
-        }
 
         if (dto.getFechaInicio().isBefore(LocalDate.now())) {
             throw new BusinessException("No se puede mover la actividad al pasado");
@@ -226,7 +222,84 @@ public class ActividadService {
         );
 
         return actividadRepository.save(actividad);
+    }*/
+    public Actividad editarActividad(Long id, ActividadUpdateDto dto, String emailUsuario) {
+        Actividad actividad = actividadRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Actividad no encontrada"));
+
+        boolean isStart = actividad.getFechaInicio().isBefore(LocalDate.now());
+
+        if (!isStart && dto.getFechaInicio().isBefore(LocalDate.now())) {
+            throw new BusinessException("No se puede mover la actividad al pasado");
+        }
+
+        if (dto.getFechaFin() != null && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
+            throw new BusinessException("La fecha de fin debe ser posterior a la de inicio");
+        }
+
+        actividad.setNombre(dto.getNombre());
+
+        if (isStart) {
+            if (actividad.getUbicacion().getId() != dto.getUbicacion()){
+                throw new BusinessException("No se puede modificar la ubicacion de una actividad iniciada");
+            }
+            if (dto.getFechaFin() != null) {
+                actividad.setFechaFin(dto.getFechaFin());
+            }
+        } else {
+            actividad.setFechaInicio(dto.getFechaInicio());
+            actividad.setFechaFin(dto.getFechaFin());
+            actividad.setMaxEstudiantes(dto.getMaxEstudiantes());
+            Ubicacion ubicacion = ubicacionRepository.findByIdWithHorarios(dto.getUbicacion()).
+                    orElseThrow(() -> new BusinessException("Ubicacion no encontrada"));
+            actividad.setUbicacion(ubicacion);
+            if (!actividad.getInstructor().getId().equals(dto.getInstructorId())) {
+                Instructor nuevoInstructor = instructorRepository.findById(dto.getInstructorId())
+                        .orElseThrow(() -> new BusinessException("Instructor no encontrado"));
+                actividad.setInstructor(nuevoInstructor);
+            }
+
+            if (dto.getHorarios() != null && !dto.getHorarios().isEmpty()) {
+                Set<HorarioActividad> nuevosHorarios = new HashSet<>();
+
+                for (ActividadCreateDto.HorarioActividadDto horarioDto : dto.getHorarios()) {
+                    HorarioActividad nuevo = getHorarioActividad(horarioDto, actividad);
+                    nuevosHorarios.add(nuevo);
+                }
+
+                actividad.getHorariosEspecificos().clear();
+                actividad.getHorariosEspecificos().addAll(nuevosHorarios);
+            }
+        }
+
+        auditoriaService.registrarAccion(
+                emailUsuario,
+                TipoAccion.ACTUALIZACION,
+                "Actividad actualizada: " + actividad.getNombre(),
+                actividad.getId()
+        );
+
+        return actividadRepository.save(actividad);
     }
+
+    private static HorarioActividad getHorarioActividad(ActividadCreateDto.HorarioActividadDto horarioDto, Actividad actividad) {
+        HorarioUbicacion base = actividad.getHorarioUbicacion();
+
+        if (horarioDto.getHoraInicio().isBefore(base.getHoraInicio()) ||
+                horarioDto.getHoraFin().isAfter(base.getHoraFin())) {
+            throw new BusinessException("El horario específico [" + horarioDto.getHoraInicio() + " - " + horarioDto.getHoraFin() +
+                    "] está fuera del rango permitido por el horario base (" +
+                    base.getHoraInicio() + " - " + base.getHoraFin() + ")");
+        }
+
+        HorarioActividad nuevo = new HorarioActividad();
+        nuevo.setHorarioBase(base);
+        nuevo.setHoraInicio(horarioDto.getHoraInicio());
+        nuevo.setHoraFin(horarioDto.getHoraFin());
+        nuevo.setActividad(actividad);
+        return nuevo;
+    }
+
 
     @Transactional
     public void eliminarActividad(Long id, String emailUsuario) {
@@ -369,4 +442,5 @@ public class ActividadService {
             return dto;
         });
     }
+
 }
